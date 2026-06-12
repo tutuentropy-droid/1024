@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-paper-50: #FBF8F1;
+  --color-paper-100: #F5F0E6;
+  --color-paper-200: #E8DFCE;
+  --color-ink-300: #2C2C2C;
+  --color-cinnabar-300: #C41E3A;
+  --color-cobalt-300: #2B5C8A;
+  --color-jade-300: #2E8B57;
+  
+  font-family: 'Noto Serif SC', SimSun, serif;
+  line-height: 1.8;
+  font-weight: 400;
+  color: var(--color-ink-300);
+  background-color: var(--color-paper-100);
+  
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--color-paper-100);
+  background-image: 
+    url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100" height="100" filter="url(%23noise)" opacity="0.03"/%3E%3C/svg%3E');
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-6 py-3 bg-cinnabar-300 text-paper-50 rounded-lg font-medium
+           hover:bg-cinnabar-400 hover:shadow-lg hover:-translate-y-0.5
+           active:translate-y-0 transition-all duration-300
+           border-2 border-cinnabar-300;
+  }
+  
+  .btn-secondary {
+    @apply px-6 py-3 bg-transparent text-cobalt-300 rounded-lg font-medium
+           border-2 border-cobalt-300
+           hover:bg-cobalt-300 hover:text-paper-50 hover:shadow-lg
+           transition-all duration-300;
+  }
+  
+  .btn-ghost {
+    @apply px-4 py-2 text-ink-300 rounded-lg
+           hover:bg-paper-200 hover:shadow-sm
+           transition-all duration-200;
+  }
+  
+  .card {
+    @apply bg-paper-50 rounded-2xl shadow-card p-6
+           border border-paper-200
+           hover:shadow-lg transition-shadow duration-300;
+  }
+  
+  .card-poem {
+    @apply bg-paper-50 rounded-xl shadow-card
+           border border-paper-200 overflow-hidden;
+  }
+  
+  .stamp {
+    @apply inline-block px-3 py-1 bg-cinnabar-50 text-cinnabar-300
+           border-2 border-cinnabar-300 rounded-sm font-display
+           transform rotate-[-2deg] shadow-sm;
+  }
+  
+  .scroll-border {
+    @apply border-x-8 border-paper-300 border-y-4 border-paper-400
+           shadow-scroll;
+  }
+  
+  .ink-divider {
+    @apply h-px bg-gradient-to-r from-transparent via-ink-100 to-transparent;
+  }
+  
+  .poem-text {
+    @apply font-kai text-ink-300 leading-loose tracking-wider;
+  }
+  
+  .title-display {
+    @apply font-display text-ink-400 tracking-wide;
+  }
+}
+
+@layer utilities {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+  
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+  
+  .writing-vertical {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .text-shadow-ink {
+    text-shadow: 2px 2px 4px rgba(44, 44, 44, 0.1);
+  }
+}
+
+@keyframes cardFlip {
+  0% {
+    transform: rotateY(0deg);
+  }
+  50% {
+    transform: rotateY(90deg);
+  }
+  100% {
+    transform: rotateY(180deg);
+  }
+}
+
+.animate-card-flip {
+  animation: cardFlip 0.6s ease-in-out forwards;
+}
+
+.animate-card-flip-back {
+  animation: cardFlip 0.6s ease-in-out reverse forwards;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-paper-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-paper-300);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-paper-400);
+}
+
+::selection {
+  background-color: var(--color-cinnabar-300);
+  color: var(--color-paper-50);
+}
