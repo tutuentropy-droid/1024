@@ -6,6 +6,7 @@ import { useAppStore } from '@/store';
 import { getPoemById, getDynastyByPoemId, getRelatedEventsByPoemId, getPoemsByDynastyId } from '@/data';
 import type { Poem, PoemLine } from '@/types';
 import HistoricalContext from './HistoricalContext';
+import AIImageGenerator from './AIImageGenerator';
 
 interface FlipCardProps {
   poemId?: string;
@@ -469,6 +470,9 @@ const FlipCard = ({ poemId, showNavigation = true }: FlipCardProps) => {
 
           {currentPoemId && (
             <HistoricalContext poemId={currentPoemId} />
+          )}
+          {currentPoemId && (
+            <AIImageGenerator poemId={currentPoemId} />
           )}
         </div>
 

@@ -317,6 +317,91 @@ export interface StudyGroup {
   createdAt: number;
 }
 
+export interface AIImage {
+  id: string;
+  poemId: string;
+  imageUrl: string;
+  prompt: string;
+  style: 'ink' | 'watercolor' | 'oil' | 'anime' | 'realistic';
+  createdAt: number;
+  isFavorite?: boolean;
+}
+
+export interface AudioTheater {
+  id: string;
+  eventId: string;
+  dynastyId: string;
+  title: string;
+  description: string;
+  duration: number;
+  narratorPoemLines: string[];
+  storyContent: string;
+  backgroundMusic: string;
+  relatedPoemIds: string[];
+  year: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+}
+
+export interface AudioTheaterProgress {
+  theaterId: string;
+  isCompleted: boolean;
+  lastPlayedAt: number;
+  playCount: number;
+}
+
+export interface AdventureScene {
+  id: string;
+  title: string;
+  description: string;
+  narrative: string;
+  imagePrompt?: string;
+  choices: AdventureChoice[];
+}
+
+export interface AdventureChoice {
+  id: string;
+  text: string;
+  requiredPoemKnowledge?: {
+    poemId?: string;
+    famousLine?: string;
+    hint?: string;
+  };
+  consequence: {
+    type: 'success' | 'failure' | 'neutral';
+    nextSceneId: string | null;
+    message: string;
+    poemReveal?: {
+      poemId: string;
+      famousLine: string;
+      explanation: string;
+    };
+  };
+}
+
+export interface Adventure {
+  id: string;
+  title: string;
+  dynastyId: string;
+  description: string;
+  startSceneId: string;
+  scenes: Record<string, AdventureScene>;
+  historicalEventId: string;
+  year: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+  requiredPoemIds: string[];
+}
+
+export interface AdventureProgress {
+  adventureId: string;
+  currentSceneId: string;
+  visitedSceneIds: string[];
+  choicesMade: Record<string, string>;
+  score: number;
+  isCompleted: boolean;
+  completedAt?: number;
+  poemsUnlocked: string[];
+}
+
 export interface AppState {
   dynasties: Dynasty[];
   poems: Poem[];
@@ -340,6 +425,14 @@ export interface AppState {
   wrongQuestions: WrongQuestion[];
   poemQuotes: PoemQuote[];
   studyGroup: StudyGroup | null;
+  aiImages: AIImage[];
+  currentGeneratingImage: boolean;
+  audioTheaters: AudioTheater[];
+  audioTheaterProgress: Record<string, AudioTheaterProgress>;
+  currentAudioTheaterId: string | null;
+  adventures: Adventure[];
+  currentAdventure: AdventureProgress | null;
+  selectedAdventureId: string | null;
 }
 
 export interface AppActions {
@@ -375,6 +468,15 @@ export interface AppActions {
   markAlmanacDownloaded: (almanacId: string) => void;
   joinStudyGroup: (groupId: string) => void;
   leaveStudyGroup: () => void;
+  generateAIImage: (poemId: string, style?: AIImage['style']) => Promise<void>;
+  toggleAIImageFavorite: (imageId: string) => void;
+  getAIImagesByPoemId: (poemId: string) => AIImage[];
+  selectAudioTheater: (theaterId: string | null) => void;
+  markAudioTheaterPlayed: (theaterId: string) => void;
+  startAdventure: (adventureId: string) => void;
+  makeAdventureChoice: (sceneId: string, choiceId: string) => void;
+  resetAdventure: () => void;
+  selectAdventure: (adventureId: string | null) => void;
 }
 
 export type AppStore = AppState & AppActions;

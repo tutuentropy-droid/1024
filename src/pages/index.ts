@@ -5,3 +5,5 @@ export { default as QuizPage } from './QuizPage';
 export { default as ProgressPage } from './ProgressPage';
 export { default as GroupPage } from './GroupPage';
 export { default as SocialPage } from './SocialPage';
+export { default as AudioTheaterPage } from './AudioTheaterPage';
+export { default as TimeMachinePage } from './TimeMachinePage';

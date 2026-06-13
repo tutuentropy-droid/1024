@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, History, ScrollText, Home, Trophy, GitCompare, Zap, Users, MessageCircle } from 'lucide-react';
+import { BookOpen, History, ScrollText, Home, Trophy, GitCompare, Zap, Users, MessageCircle, Music, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const Header = () => {
@@ -8,6 +8,8 @@ const Header = () => {
   const navItems = [
     { path: '/', label: '首页', icon: Home },
     { path: '/timeline', label: '时间轴', icon: History },
+    { path: '/theater', label: '有声剧场', icon: Music },
+    { path: '/timemachine', label: '时空穿梭', icon: Clock },
     { path: '/compare', label: '朝代对比', icon: GitCompare },
     { path: '/challenge', label: '每日挑战', icon: Zap },
     { path: '/group', label: '共学小组', icon: Users },

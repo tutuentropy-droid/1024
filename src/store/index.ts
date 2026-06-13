@@ -3,14 +3,16 @@ import { persist } from 'zustand/middleware';
 import type { 
   AppStore, UserProgress, QuizResult, Poem, DailyChallengeResult,
   VirtualPoet, SocialPost, ChatMessage, Puzzle, Poster, Almanac,
-  NoteItem, WrongQuestion, PoemQuote, StudyGroup, PuzzlePiece
+  NoteItem, WrongQuestion, PoemQuote, StudyGroup, PuzzlePiece,
+  AIImage, AudioTheaterProgress, AdventureProgress, AdventureScene
 } from '@/types';
 import { 
   dynasties, poems, events, getPoemById, getAllDynasties, 
   getPoemsByDynastyId, getSubPeriodsByDynastyId, 
   getPoemsBySubPeriodId, getPoemsByDifficulty, subPeriods,
   getAllSubPeriods, comparisons, generateDailyChallengeData,
-  virtualPoets, socialPosts, getVirtualPoetById
+  virtualPoets, socialPosts, getVirtualPoetById,
+  getAllAudioTheaters, getAudioTheaterById, getAllAdventures, getAdventureById
 } from '@/data';
 
 const initialUserProgress: UserProgress = {
@@ -114,6 +116,14 @@ export const useAppStore = create<AppStore>()(
       wrongQuestions: [],
       poemQuotes: [],
       studyGroup: initialStudyGroup,
+      aiImages: [],
+      currentGeneratingImage: false,
+      audioTheaters: getAllAudioTheaters(),
+      audioTheaterProgress: {},
+      currentAudioTheaterId: null,
+      adventures: getAllAdventures(),
+      currentAdventure: null,
+      selectedAdventureId: null,
 
       selectDynasty: (id: string | null) => {
         set({ selectedDynastyId: id });
@@ -769,6 +779,150 @@ export const useAppStore = create<AppStore>()(
       leaveStudyGroup: () => {
         set({ studyGroup: null });
       },
+
+      generateAIImage: async (poemId: string, style: AIImage['style'] = 'ink') => {
+        const poem = getPoemById(poemId);
+        if (!poem) return;
+
+        set({ currentGeneratingImage: true });
+
+        const dynasty = dynasties.find(d => d.id === poem.dynastyId);
+        const dynastyName = dynasty?.name || '中国古代';
+        
+        const stylePrompts: Record<AIImage['style'], string> = {
+          ink: 'traditional Chinese ink wash painting style, minimalist, elegant, black and white with subtle colors',
+          watercolor: 'watercolor painting style, soft colors, dreamy atmosphere, artistic brushstrokes',
+          oil: 'oil painting style, rich colors, dramatic lighting, classical art',
+          anime: 'anime style, vibrant colors, detailed illustration, modern aesthetic',
+          realistic: 'photorealistic style, highly detailed, historical accuracy, cinematic lighting'
+        };
+
+        const prompt = `${poem.famousLine} - A scene from ${dynastyName} China, depicting the mood and atmosphere of the poem "${poem.title}" by ${poem.author}. ${stylePrompts[style]}. Historical scene, ancient Chinese architecture, traditional clothing, the essence of classical Chinese poetry.`;
+
+        const imageSize = 'landscape_16_9';
+        const encodedPrompt = encodeURIComponent(prompt);
+        const imageUrl = `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=${encodedPrompt}&image_size=${imageSize}`;
+
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        const newImage: AIImage = {
+          id: `ai-image-${poemId}-${Date.now()}`,
+          poemId,
+          imageUrl,
+          prompt,
+          style,
+          createdAt: Date.now(),
+          isFavorite: false
+        };
+
+        set((state) => ({
+          aiImages: [...state.aiImages, newImage],
+          currentGeneratingImage: false
+        }));
+      },
+
+      toggleAIImageFavorite: (imageId: string) => {
+        set((state) => ({
+          aiImages: state.aiImages.map(img => 
+            img.id === imageId ? { ...img, isFavorite: !img.isFavorite } : img
+          )
+        }));
+      },
+
+      getAIImagesByPoemId: (poemId: string) => {
+        return get().aiImages.filter(img => img.poemId === poemId);
+      },
+
+      selectAudioTheater: (theaterId: string | null) => {
+        set({ currentAudioTheaterId: theaterId });
+      },
+
+      markAudioTheaterPlayed: (theaterId: string) => {
+        set((state) => {
+          const existing = state.audioTheaterProgress[theaterId];
+          return {
+            audioTheaterProgress: {
+              ...state.audioTheaterProgress,
+              [theaterId]: {
+                theaterId,
+                isCompleted: true,
+                lastPlayedAt: Date.now(),
+                playCount: (existing?.playCount || 0) + 1
+              }
+            }
+          };
+        });
+      },
+
+      startAdventure: (adventureId: string) => {
+        const adventure = getAdventureById(adventureId);
+        if (!adventure) return;
+
+        const progress: AdventureProgress = {
+          adventureId,
+          currentSceneId: adventure.startSceneId,
+          visitedSceneIds: [adventure.startSceneId],
+          choicesMade: {},
+          score: 0,
+          isCompleted: false,
+          poemsUnlocked: []
+        };
+
+        set({ currentAdventure: progress, selectedAdventureId: adventureId });
+      },
+
+      makeAdventureChoice: (sceneId: string, choiceId: string) => {
+        set((state) => {
+          if (!state.currentAdventure) return state;
+
+          const adventure = getAdventureById(state.currentAdventure.adventureId);
+          if (!adventure) return state;
+
+          const scene = adventure.scenes[sceneId];
+          if (!scene) return state;
+
+          const choice = scene.choices.find(c => c.id === choiceId);
+          if (!choice) return state;
+
+          const isSuccess = choice.consequence.type === 'success';
+          const scoreDelta = isSuccess ? 100 : choice.consequence.type === 'neutral' ? 50 : 0;
+
+          const newPoemsUnlocked = choice.consequence.poemReveal 
+            ? [...state.currentAdventure.poemsUnlocked, choice.consequence.poemReveal.poemId]
+            : state.currentAdventure.poemsUnlocked;
+
+          const isCompleted = choice.consequence.nextSceneId === null || 
+            (choice.consequence.nextSceneId && choice.consequence.nextSceneId.includes('good'));
+
+          const nextSceneId = choice.consequence.nextSceneId;
+
+          return {
+            currentAdventure: {
+              ...state.currentAdventure,
+              currentSceneId: nextSceneId || state.currentAdventure.currentSceneId,
+              visitedSceneIds: nextSceneId && !state.currentAdventure.visitedSceneIds.includes(nextSceneId)
+                ? [...state.currentAdventure.visitedSceneIds, nextSceneId]
+                : state.currentAdventure.visitedSceneIds,
+              choicesMade: {
+                ...state.currentAdventure.choicesMade,
+                [sceneId]: choiceId
+              },
+              score: state.currentAdventure.score + scoreDelta,
+              isCompleted: isCompleted || state.currentAdventure.isCompleted,
+              completedAt: isCompleted ? Date.now() : undefined,
+              poemsUnlocked: [...new Set(newPoemsUnlocked)]
+            }
+          };
+        });
+      },
+
+      resetAdventure: () => {
+        set({ currentAdventure: null });
+      },
+
+      selectAdventure: (adventureId: string | null) => {
+        set({ selectedAdventureId: adventureId });
+      },
     }),
     {
       name: 'shishi-zhixue-storage',
@@ -785,6 +939,11 @@ export const useAppStore = create<AppStore>()(
         poemQuotes: state.poemQuotes,
         socialPosts: state.socialPosts,
         studyGroup: state.studyGroup,
+        aiImages: state.aiImages,
+        audioTheaterProgress: state.audioTheaterProgress,
+        currentAdventure: state.currentAdventure,
+        selectedAdventureId: state.selectedAdventureId,
+        currentAudioTheaterId: state.currentAudioTheaterId,
       }),
     }
   )

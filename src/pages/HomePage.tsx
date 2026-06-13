@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { History, BookOpen, Brain, Award, ChevronRight, ScrollText, Sparkles, GitCompare, Zap, Users, MessageCircle, Puzzle, Image, FileText } from 'lucide-react';
+import { History, BookOpen, Brain, Award, ChevronRight, ScrollText, Sparkles, GitCompare, Zap, Users, MessageCircle, Puzzle, Image, FileText, Music, Clock } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { getAllPoems } from '@/data';
 import { cn } from '@/lib/utils';
@@ -34,6 +34,36 @@ const HomePage = () => {
       textColor: 'text-cobalt-300',
     },
     {
+      icon: Image,
+      title: 'AI意境配图',
+      description: '学习诗词时自动生成与诗句意境及历史场景匹配的插画，多种绘画风格可选。',
+      path: recommendedPoem ? `/card/${recommendedPoem.id}` : '/card',
+      color: 'from-indigo-400 to-purple-500',
+      bgColor: 'bg-indigo-50',
+      textColor: 'text-indigo-500',
+      highlight: true,
+    },
+    {
+      icon: Music,
+      title: '有声剧场',
+      description: '重大历史事件改编为2分钟音频故事，经典诗句作旁白，让历史在耳边鲜活起来。',
+      path: '/theater',
+      color: 'from-emerald-400 to-teal-500',
+      bgColor: 'bg-emerald-50',
+      textColor: 'text-emerald-500',
+      highlight: true,
+    },
+    {
+      icon: Clock,
+      title: '时空穿梭机',
+      description: '第一人称进入历史时刻，用你的诗词知识做出正确选择，改变历史的走向。',
+      path: '/timemachine',
+      color: 'from-violet-500 to-purple-600',
+      bgColor: 'bg-violet-50',
+      textColor: 'text-violet-500',
+      highlight: true,
+    },
+    {
       icon: Brain,
       title: '智能测试',
       description: '根据已学内容随机出题，多种题型检验学习成果，即时反馈答案解析。',
@@ -50,7 +80,6 @@ const HomePage = () => {
       color: 'from-purple-400 to-purple-600',
       bgColor: 'bg-purple-50',
       textColor: 'text-purple-500',
-      highlight: true,
     },
     {
       icon: MessageCircle,
@@ -60,7 +89,6 @@ const HomePage = () => {
       color: 'from-rose-400 to-rose-600',
       bgColor: 'bg-rose-50',
       textColor: 'text-rose-500',
-      highlight: true,
     },
     {
       icon: GitCompare,

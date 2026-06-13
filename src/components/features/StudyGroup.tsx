@@ -1,13 +1,105 @@
 import { useState } from 'react';
-import { Users, Puzzle, Image, MessageCircle, BookOpen, Trophy, ChevronRight, Crown, Sparkles } from 'lucide-react';
+import { Users, Puzzle, Image, MessageCircle, BookOpen, Trophy, ChevronRight, Crown, Sparkles, Heart, Calendar } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { cn } from '@/lib/utils';
 import DynastyPuzzle from './DynastyPuzzle';
 import KnowledgePoster from './KnowledgePoster';
-import SocialPage from '@/pages/SocialPage';
 import AlmanacGenerator from './AlmanacGenerator';
+import { getVirtualPoetById, getDynastyById } from '@/data';
+import type { SocialPost } from '@/types';
 
 type TabType = 'home' | 'puzzle' | 'poster' | 'social' | 'almanac';
+
+const formatTime = (timestamp: number): string => {
+  const now = Date.now();
+  const diff = now - timestamp;
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 1) return '刚刚';
+  if (minutes < 60) return `${minutes}分钟前`;
+  if (hours < 24) return `${hours}小时前`;
+  if (days < 7) return `${days}天前`;
+  return new Date(timestamp).toLocaleDateString('zh-CN');
+};
+
+const SocialFeed = () => {
+  const { socialPosts, likeSocialPost } = useAppStore();
+
+  return (
+    <div className="space-y-6 max-w-2xl mx-auto">
+      {[...socialPosts].reverse().slice(0, 3).map((post, index) => {
+        const poet = getVirtualPoetById(post.poetId);
+        const dynasty = poet ? getDynastyById(poet.dynastyId) : null;
+
+        return (
+          <div
+            key={post.id}
+            className="card animate-fade-in-up"
+            style={{ animationDelay: `${index * 100}ms` }}
+          >
+            <div className="flex items-start gap-4 mb-4">
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                style={{ backgroundColor: dynasty?.color + '20' }}
+              >
+                {poet?.avatar || '👤'}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium text-ink-400">
+                    {poet?.name || '匿名诗人'}
+                  </span>
+                  <span className="text-xs text-ink-100">
+                    {poet?.styleName}
+                  </span>
+                  {dynasty && (
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: dynasty.color + '20', color: dynasty.color }}
+                    >
+                      {dynasty.name}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-ink-100">
+                  <Calendar className="w-3 h-3" />
+                  {formatTime(post.timestamp)}
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-ink-300 leading-relaxed whitespace-pre-line line-clamp-4">
+                {post.content}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4 pt-4 border-t border-paper-200">
+              <button
+                onClick={() => likeSocialPost(post.id)}
+                className={cn(
+                  'flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300',
+                  post.likedByUser
+                    ? 'bg-cinnabar-50 text-cinnabar-300'
+                    : 'text-ink-200 hover:bg-paper-200'
+                )}
+              >
+                <Heart className={cn('w-4 h-4', post.likedByUser && 'fill-current')} />
+                <span className="text-sm">{post.likes}</span>
+              </button>
+              <div className="flex items-center gap-2 text-ink-200">
+                <MessageCircle className="w-4 h-4" />
+                <span className="text-sm">{post.comments.length}</span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 const StudyGroup = () => {
   const { studyGroup, userProgress, dynasties, generateAlmanac } = useAppStore();
@@ -30,7 +122,7 @@ const StudyGroup = () => {
       case 'poster':
         return <KnowledgePoster />;
       case 'social':
-        return <SocialPage />;
+        return <SocialFeed />;
       case 'almanac':
         return <AlmanacGenerator />;
       default:
@@ -38,7 +130,9 @@ const StudyGroup = () => {
     }
   };
 
-  if (activeTab !== 'home') {
+  const isHomeTab = activeTab === 'home';
+
+  if (!isHomeTab) {
     return (
       <div>
         <div className="sticky top-[73px] z-40 bg-paper-50 border-b border-paper-200">
@@ -48,7 +142,9 @@ const StudyGroup = () => {
                 onClick={() => setActiveTab('home')}
                 className={cn(
                   'px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-all duration-200 flex items-center gap-2',
-                  'text-ink-200 hover:bg-paper-100'
+                  isHomeTab
+                    ? 'bg-cinnabar-100 text-cinnabar-300'
+                    : 'text-ink-200 hover:bg-paper-100'
                 )}
               >
                 <Users className="w-4 h-4" />
@@ -56,13 +152,14 @@ const StudyGroup = () => {
               </button>
               {tabs.filter(t => t.id !== 'home').map(tab => {
                 const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
                       'px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-all duration-200 flex items-center gap-2',
-                      activeTab === tab.id
+                      isActive
                         ? 'bg-cinnabar-100 text-cinnabar-300'
                         : 'text-ink-200 hover:bg-paper-100'
                     )}

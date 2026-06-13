@@ -5,10 +5,14 @@ import { subPeriods } from './subPeriods';
 import { comparisons } from './comparisons';
 import { virtualPoets, getVirtualPoetById, getAllVirtualPoets, getVirtualPoetsByDynastyId } from './virtualPoets';
 import { socialPosts, getSocialPostsByDynastyId, getSocialPostsByPoetId } from './socialPosts';
-import type { Dynasty, Poem, HistoricalEvent, DynastySubPeriod, DynastyComparison, DailyChallenge, DailyChallengeItem, VirtualPoet, SocialPost } from '@/types';
+import { audioTheaters, getAllAudioTheaters, getAudioTheaterById, getAudioTheatersByDynastyId } from './audioTheaters';
+import { adventures, getAllAdventures, getAdventureById, getAdventuresByDynastyId } from './adventures';
+import type { Dynasty, Poem, HistoricalEvent, DynastySubPeriod, DynastyComparison, DailyChallenge, DailyChallengeItem, VirtualPoet, SocialPost, AudioTheater, Adventure } from '@/types';
 
-export { dynasties, poems, events, subPeriods, comparisons, virtualPoets, socialPosts };
+export { dynasties, poems, events, subPeriods, comparisons, virtualPoets, socialPosts, audioTheaters, adventures };
 export { getVirtualPoetById, getAllVirtualPoets, getVirtualPoetsByDynastyId, getSocialPostsByDynastyId, getSocialPostsByPoetId };
+export { getAllAudioTheaters, getAudioTheaterById, getAudioTheatersByDynastyId };
+export { getAllAdventures, getAdventureById, getAdventuresByDynastyId };
 
 export const getAllDynasties = (): Dynasty[] => {
   return dynasties.sort((a, b) => a.startYear - b.startYear);
