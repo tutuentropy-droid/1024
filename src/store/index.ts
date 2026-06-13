@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { AppStore, UserProgress, QuizResult, Poem } from '@/types';
+import type { AppStore, UserProgress, QuizResult, Poem, DailyChallengeResult } from '@/types';
 import { 
   dynasties, poems, events, getPoemById, getAllDynasties, 
   getPoemsByDynastyId, getSubPeriodsByDynastyId, 
   getPoemsBySubPeriodId, getPoemsByDifficulty, subPeriods,
-  getAllSubPeriods
+  getAllSubPeriods, comparisons, generateDailyChallengeData
 } from '@/data';
 
 const initialUserProgress: UserProgress = {
@@ -19,6 +19,8 @@ const initialUserProgress: UserProgress = {
   currentDifficulty: 'easy',
   poemOrderPreference: [],
   subPeriodProgress: {},
+  completedDynasties: [],
+  dailyChallengeResults: [],
 };
 
 export const useAppStore = create<AppStore>()(
@@ -28,9 +30,11 @@ export const useAppStore = create<AppStore>()(
       poems: poems,
       events: events,
       subPeriods: getAllSubPeriods(),
+      comparisons: comparisons,
       userProgress: initialUserProgress,
       selectedDynastyId: null,
       selectedPoemId: null,
+      dailyChallenge: null,
 
       selectDynasty: (id: string | null) => {
         set({ selectedDynastyId: id });
@@ -220,6 +224,45 @@ export const useAppStore = create<AppStore>()(
 
       getPoemsBySubPeriodId: (subPeriodId: string) => {
         return getPoemsBySubPeriodId(subPeriodId);
+      },
+
+      markDynastyCompleted: (dynastyId: string) => {
+        set((state) => {
+          if (state.userProgress.completedDynasties.includes(dynastyId)) return state;
+          return {
+            userProgress: {
+              ...state.userProgress,
+              completedDynasties: [...state.userProgress.completedDynasties, dynastyId],
+            },
+          };
+        });
+      },
+
+      saveDailyChallengeResult: (result: DailyChallengeResult) => {
+        set((state) => {
+          const existing = state.userProgress.dailyChallengeResults.find(r => r.date === result.date);
+          if (existing) return state;
+          return {
+            userProgress: {
+              ...state.userProgress,
+              dailyChallengeResults: [...state.userProgress.dailyChallengeResults, result],
+            },
+          };
+        });
+      },
+
+      generateDailyChallenge: () => {
+        const challenge = generateDailyChallengeData();
+        set({ dailyChallenge: challenge });
+      },
+
+      getDynastyCompletionStats: () => {
+        const state = get();
+        const allDynastyIds = state.dynasties.map(d => d.id);
+        const completed = state.userProgress.completedDynasties.length;
+        const total = allDynastyIds.length;
+        const percentage = total > 0 ? (completed / total) * 100 : 0;
+        return { completed, total, percentage };
       },
     }),
     {

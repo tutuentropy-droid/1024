@@ -130,6 +130,8 @@ export interface UserProgress {
     mastery: number;
     poemIds: string[];
   }>;
+  completedDynasties: string[];
+  dailyChallengeResults: DailyChallengeResult[];
 }
 
 export interface AppState {
@@ -137,9 +139,11 @@ export interface AppState {
   poems: Poem[];
   events: HistoricalEvent[];
   subPeriods: DynastySubPeriod[];
+  comparisons: DynastyComparison[];
   userProgress: UserProgress;
   selectedDynastyId: string | null;
   selectedPoemId: string | null;
+  dailyChallenge: DailyChallenge | null;
 }
 
 export interface AppActions {
@@ -155,6 +159,49 @@ export interface AppActions {
   getSubPeriodsByDynastyId: (dynastyId: string) => DynastySubPeriod[];
   getPoemsBySubPeriodId: (subPeriodId: string) => Poem[];
   recordPoemAnswer: (poemId: string, isCorrect: boolean) => void;
+  markDynastyCompleted: (dynastyId: string) => void;
+  saveDailyChallengeResult: (result: DailyChallengeResult) => void;
+  generateDailyChallenge: () => void;
+  getDynastyCompletionStats: () => { completed: number; total: number; percentage: number; };
+}
+
+export interface DynastyComparisonDimension {
+  dimension: string;
+  dynastyAValue: string;
+  dynastyBValue: string;
+}
+
+export interface DynastyComparison {
+  id: string;
+  dynastyAId: string;
+  dynastyBId: string;
+  title: string;
+  description: string;
+  dimensions: DynastyComparisonDimension[];
+  conclusion: string;
+}
+
+export interface DailyChallengeItem {
+  poemId: string;
+  famousLine: string;
+  dynastyId: string;
+  dynastyName: string;
+  startYear: number;
+  order: number;
+}
+
+export interface DailyChallenge {
+  date: string;
+  items: DailyChallengeItem[];
+  correctOrder: number[];
+  knowledgePoints: string[];
+}
+
+export interface DailyChallengeResult {
+  date: string;
+  isCorrect: boolean;
+  userOrder: number[];
+  unlockedKnowledge: string[];
 }
 
 export type AppStore = AppState & AppActions;

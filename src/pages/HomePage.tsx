@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { History, BookOpen, Brain, Award, ChevronRight, ScrollText, Sparkles } from 'lucide-react';
+import { History, BookOpen, Brain, Award, ChevronRight, ScrollText, Sparkles, GitCompare, Zap } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { getAllPoems } from '@/data';
 import { cn } from '@/lib/utils';
@@ -41,6 +41,24 @@ const HomePage = () => {
       color: 'from-jade-300 to-jade-400',
       bgColor: 'bg-jade-50',
       textColor: 'text-jade-300',
+    },
+    {
+      icon: GitCompare,
+      title: '跨朝代对比',
+      description: '自动生成朝代对比表格，探索不同时期诗词意象的异同与历史变迁。',
+      path: '/compare',
+      color: 'from-gold-300 to-gold-400',
+      bgColor: 'bg-gold-50',
+      textColor: 'text-gold-300',
+    },
+    {
+      icon: Zap,
+      title: '每日挑战',
+      description: '五句诗词按朝代排序，正确解锁知识点，每天更新挑战内容。',
+      path: '/challenge',
+      color: 'from-cinnabar-300 to-gold-300',
+      bgColor: 'bg-gold-50',
+      textColor: 'text-gold-300',
     },
   ];
 
@@ -117,7 +135,7 @@ const HomePage = () => {
             探索功能
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 max-w-6xl mx-auto">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (

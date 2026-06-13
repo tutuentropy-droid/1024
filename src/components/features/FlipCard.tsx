@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store';
 import { getPoemById, getDynastyByPoemId, getRelatedEventsByPoemId, getPoemsByDynastyId } from '@/data';
 import type { Poem, PoemLine } from '@/types';
+import HistoricalContext from './HistoricalContext';
 
 interface FlipCardProps {
   poemId?: string;
@@ -465,6 +466,10 @@ const FlipCard = ({ poemId, showNavigation = true }: FlipCardProps) => {
             <Check className="w-4 h-4" />
             {poemProgress?.isStudied ? '已学习' : '标记已学习'}
           </button>
+
+          {currentPoemId && (
+            <HistoricalContext poemId={currentPoemId} />
+          )}
         </div>
 
         {showSuccess && (

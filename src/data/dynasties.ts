@@ -73,6 +73,32 @@ export const dynasties: Dynasty[] = [
     keyEvents: ['康乾盛世', '鸦片战争', '太平天国运动', '辛亥革命'],
     poemIds: ['poem-qing-1', 'poem-qing-2', 'poem-qing-3'],
   },
+  {
+    id: 'nanbeichao',
+    name: '南北朝',
+    startYear: 420,
+    endYear: 589,
+    description: '南北朝是中国历史上一段分裂时期，南方经历宋、齐、梁、陈四朝，北方经历北魏、东魏、西魏、北齐、北周五朝。这一时期社会动荡，战乱频繁，但文化上呈现多元发展，乐府民歌繁荣，山水诗兴起。',
+    color: '#9B7E9A',
+    capital: '建康（今南京）/ 平城、洛阳',
+    famousPoets: ['陶渊明', '谢灵运', '鲍照', '庾信', '谢朓'],
+    keyEvents: ['刘裕代晋', '北魏统一北方', '孝文帝改革', '侯景之乱', '隋灭陈'],
+    poemIds: ['poem-nbc-1', 'poem-nbc-2', 'poem-nbc-3'],
+    subPeriodIds: ['sub-nbc-south', 'sub-nbc-north'],
+  },
+  {
+    id: 'wudai',
+    name: '五代十国',
+    startYear: 907,
+    endYear: 979,
+    description: '五代十国是唐朝灭亡后宋朝建立前的分裂时期，中原地区经历后梁、后唐、后晋、后汉、后周五个朝代，南方则有十个割据政权。战乱频仍，民不聊生，但词的创作在南唐得到发展。',
+    color: '#A0826D',
+    capital: '开封、洛阳 / 各地割据',
+    famousPoets: ['李煜', '韦庄', '冯延巳', '温庭筠', '罗隐'],
+    keyEvents: ['朱温篡唐', '后唐灭后梁', '石敬瑭割燕云十六州', '后周世宗改革', '赵匡胤陈桥兵变'],
+    poemIds: ['poem-wudai-1', 'poem-wudai-2', 'poem-wudai-3'],
+    subPeriodIds: ['sub-wudai-tang', 'sub-wudai-south'],
+  },
 ];
 
 export default dynasties;
