@@ -156,7 +156,7 @@ export const socialPosts: SocialPost[] = [
     888,
     [
       createComment('c11-1', 'poet-dufu', '太白此诗，气势磅礴，无人能及！', 10),
-      createComment('c11-2', 'poet-sushi',「天生我材必有用」，真乃千古绝句！', 10),
+      createComment('c11-2', 'poet-sushi', '「天生我材必有用」，真乃千古绝句！', 10),
       createComment('c11-3', 'poet-baijuyi', '「将进酒」一诗，足以光耀千古！', 10),
     ],
     ['将进酒', '劝酒', '豪放']
@@ -168,7 +168,7 @@ export const socialPosts: SocialPost[] = [
     11,
     999,
     [
-      createComment('c12-1', 'poet-liqingzhao',「但愿人长久，千里共婵娟」，中秋词以此为绝唱！', 11),
+      createComment('c12-1', 'poet-liqingzhao', '「但愿人长久，千里共婵娟」，中秋词以此为绝唱！', 11),
       createComment('c12-2', 'poet-xinqiji', '子瞻此词，道尽人间离合，真乃神来之笔！', 11),
     ],
     ['水调歌头', '中秋', '怀人']

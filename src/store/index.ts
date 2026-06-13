@@ -232,7 +232,7 @@ export const useAppStore = create<AppStore>()(
                 id: `wrong-${Date.now()}-${detail.questionId}`,
                 questionId: detail.questionId,
                 poemId: detail.poemId,
-                question: detail.question,
+                question: detail.questionId,
                 userAnswer: detail.userAnswer,
                 correctAnswer: detail.correctAnswer,
                 dynastyId: poem?.dynastyId || '',

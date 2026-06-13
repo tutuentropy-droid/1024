@@ -80,10 +80,10 @@ const AlmanacGenerator = () => {
       let contentStream = 'BT\n';
       contentStream += '/F1 24 Tf\n';
       contentStream += '50 800 Td\n';
-      contentStream += `(${almanac.dynastyName}学习年鉴) Tj\n';
+      contentStream += `(${almanac.dynastyName}学习年鉴) Tj\n`;
       contentStream += '0 -30 Td\n';
       contentStream += '/F1 12 Tf\n';
-      contentStream += `(${almanac.period}) Tj\n';
+      contentStream += `(${almanac.period}) Tj\n`;
       contentStream += '0 -50 Td\n';
       
       contentStream += '/F1 16 Tf\n';

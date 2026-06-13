@@ -48,9 +48,7 @@ const StudyGroup = () => {
                 onClick={() => setActiveTab('home')}
                 className={cn(
                   'px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-all duration-200 flex items-center gap-2',
-                  activeTab === 'home'
-                    ? 'bg-cinnabar-100 text-cinnabar-300'
-                    : 'text-ink-200 hover:bg-paper-100'
+                  'text-ink-200 hover:bg-paper-100'
                 )}
               >
                 <Users className="w-4 h-4" />
