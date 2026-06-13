@@ -3,9 +3,12 @@ import { poems } from './poems';
 import { events } from './events';
 import { subPeriods } from './subPeriods';
 import { comparisons } from './comparisons';
-import type { Dynasty, Poem, HistoricalEvent, DynastySubPeriod, DynastyComparison, DailyChallenge, DailyChallengeItem } from '@/types';
+import { virtualPoets, getVirtualPoetById, getAllVirtualPoets, getVirtualPoetsByDynastyId } from './virtualPoets';
+import { socialPosts, getSocialPostsByDynastyId, getSocialPostsByPoetId } from './socialPosts';
+import type { Dynasty, Poem, HistoricalEvent, DynastySubPeriod, DynastyComparison, DailyChallenge, DailyChallengeItem, VirtualPoet, SocialPost } from '@/types';
 
-export { dynasties, poems, events, subPeriods, comparisons };
+export { dynasties, poems, events, subPeriods, comparisons, virtualPoets, socialPosts };
+export { getVirtualPoetById, getAllVirtualPoets, getVirtualPoetsByDynastyId, getSocialPostsByDynastyId, getSocialPostsByPoetId };
 
 export const getAllDynasties = (): Dynasty[] => {
   return dynasties.sort((a, b) => a.startYear - b.startYear);

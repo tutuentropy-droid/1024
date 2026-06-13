@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { History, BookOpen, Brain, Award, ChevronRight, ScrollText, Sparkles, GitCompare, Zap } from 'lucide-react';
+import { History, BookOpen, Brain, Award, ChevronRight, ScrollText, Sparkles, GitCompare, Zap, Users, MessageCircle, Puzzle, Image, FileText } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { getAllPoems } from '@/data';
 import { cn } from '@/lib/utils';
@@ -43,6 +43,26 @@ const HomePage = () => {
       textColor: 'text-jade-300',
     },
     {
+      icon: Users,
+      title: '共学小组',
+      description: '加入诗史共学小组，与组员协作完成朝代拼图，合成知识海报。',
+      path: '/group',
+      color: 'from-purple-400 to-purple-600',
+      bgColor: 'bg-purple-50',
+      textColor: 'text-purple-500',
+      highlight: true,
+    },
+    {
+      icon: MessageCircle,
+      title: '文人朋友圈',
+      description: '穿越千年与李白、杜甫等大诗人互动，AI第一人称回答历史问题。',
+      path: '/social',
+      color: 'from-rose-400 to-rose-600',
+      bgColor: 'bg-rose-50',
+      textColor: 'text-rose-500',
+      highlight: true,
+    },
+    {
       icon: GitCompare,
       title: '跨朝代对比',
       description: '自动生成朝代对比表格，探索不同时期诗词意象的异同与历史变迁。',
@@ -59,6 +79,15 @@ const HomePage = () => {
       color: 'from-cinnabar-300 to-gold-300',
       bgColor: 'bg-gold-50',
       textColor: 'text-gold-300',
+    },
+    {
+      icon: FileText,
+      title: '学习年鉴',
+      description: '学习完朝代后自动生成PDF年鉴，含笔记错题和诗词摘抄。',
+      path: '/group',
+      color: 'from-amber-400 to-amber-600',
+      bgColor: 'bg-amber-50',
+      textColor: 'text-amber-600',
     },
   ];
 
@@ -135,17 +164,20 @@ const HomePage = () => {
             探索功能
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
                 <div
                   key={index}
                   className="group cursor-pointer animate-fade-in-up"
-                  style={{ animationDelay: `${index * 150}ms` }}
+                  style={{ animationDelay: `${index * 100}ms` }}
                   onClick={() => navigate(feature.path)}
                 >
-                  <div className="card h-full hover:-translate-y-2 transition-all duration-300">
+                  <div className={cn(
+                    'card h-full hover:-translate-y-2 transition-all duration-300',
+                    feature.highlight && 'ring-2 ring-purple-200'
+                  )}>
                     <div className={cn(
                       'w-16 h-16 rounded-2xl flex items-center justify-center mb-6 bg-gradient-to-br',
                       feature.color
@@ -153,8 +185,13 @@ const HomePage = () => {
                       <Icon className="w-8 h-8 text-paper-50" />
                     </div>
                     
-                    <h3 className="title-display text-xl text-ink-400 mb-3">
+                    <h3 className="title-display text-xl text-ink-400 mb-3 flex items-center gap-2">
                       {feature.title}
+                      {feature.highlight && (
+                        <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-600 rounded-full">
+                          新
+                        </span>
+                      )}
                     </h3>
                     
                     <p className="text-sm text-ink-200 leading-relaxed mb-6">

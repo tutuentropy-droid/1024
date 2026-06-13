@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, History, ScrollText, Home, Trophy, GitCompare, Zap } from 'lucide-react';
+import { BookOpen, History, ScrollText, Home, Trophy, GitCompare, Zap, Users, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const Header = () => {
@@ -10,6 +10,8 @@ const Header = () => {
     { path: '/timeline', label: '时间轴', icon: History },
     { path: '/compare', label: '朝代对比', icon: GitCompare },
     { path: '/challenge', label: '每日挑战', icon: Zap },
+    { path: '/group', label: '共学小组', icon: Users },
+    { path: '/social', label: '文人圈', icon: MessageCircle },
     { path: '/progress', label: '仪表盘', icon: Trophy },
   ];
 

@@ -134,36 +134,7 @@ export interface UserProgress {
   dailyChallengeResults: DailyChallengeResult[];
 }
 
-export interface AppState {
-  dynasties: Dynasty[];
-  poems: Poem[];
-  events: HistoricalEvent[];
-  subPeriods: DynastySubPeriod[];
-  comparisons: DynastyComparison[];
-  userProgress: UserProgress;
-  selectedDynastyId: string | null;
-  selectedPoemId: string | null;
-  dailyChallenge: DailyChallenge | null;
-}
 
-export interface AppActions {
-  selectDynasty: (id: string | null) => void;
-  selectPoem: (id: string | null) => void;
-  markPoemAsStudied: (poemId: string) => void;
-  toggleFavorite: (poemId: string) => void;
-  saveQuizResult: (result: Omit<QuizResult, 'id' | 'date'>) => void;
-  getStudiedPoemIds: () => string[];
-  getRecommendedPoem: () => Poem | null;
-  adjustDifficulty: (accuracy: number) => 'easy' | 'medium' | 'hard';
-  getOrderedPoems: () => Poem[];
-  getSubPeriodsByDynastyId: (dynastyId: string) => DynastySubPeriod[];
-  getPoemsBySubPeriodId: (subPeriodId: string) => Poem[];
-  recordPoemAnswer: (poemId: string, isCorrect: boolean) => void;
-  markDynastyCompleted: (dynastyId: string) => void;
-  saveDailyChallengeResult: (result: DailyChallengeResult) => void;
-  generateDailyChallenge: () => void;
-  getDynastyCompletionStats: () => { completed: number; total: number; percentage: number; };
-}
 
 export interface DynastyComparisonDimension {
   dimension: string;
@@ -202,6 +173,208 @@ export interface DailyChallengeResult {
   isCorrect: boolean;
   userOrder: number[];
   unlockedKnowledge: string[];
+}
+
+export interface VirtualPoet {
+  id: string;
+  name: string;
+  styleName: string;
+  avatar: string;
+  dynastyId: string;
+  bio: string;
+  personality: string;
+  famousWorks: string[];
+  catchphrases: string[];
+}
+
+export interface SocialComment {
+  id: string;
+  poetId: string;
+  content: string;
+  timestamp: number;
+}
+
+export interface SocialPost {
+  id: string;
+  poetId: string;
+  content: string;
+  timestamp: number;
+  likes: number;
+  likedByUser: boolean;
+  comments: SocialComment[];
+  tags?: string[];
+  imageUrl?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  content: string;
+  isUser: boolean;
+  timestamp: number;
+}
+
+export interface PuzzlePiece {
+  id: string;
+  dynastyId: string;
+  position: number;
+  content: string;
+  type: 'event' | 'poet' | 'poem' | 'achievement';
+  isPlaced: boolean;
+  placedBy?: string;
+}
+
+export interface Puzzle {
+  id: string;
+  dynastyId: string;
+  name: string;
+  pieces: PuzzlePiece[];
+  totalPieces: number;
+  isCompleted: boolean;
+  completedAt?: number;
+}
+
+export interface PosterSection {
+  id: string;
+  type: 'title' | 'timeline' | 'poems' | 'events' | 'poets' | 'stats';
+  title: string;
+  content: string;
+}
+
+export interface Poster {
+  id: string;
+  dynastyId: string;
+  title: string;
+  subtitle: string;
+  sections: PosterSection[];
+  backgroundColor: string;
+  textColor: string;
+  accentColor: string;
+  createdAt: number;
+  isGenerated: boolean;
+}
+
+export interface NoteItem {
+  id: string;
+  poemId?: string;
+  content: string;
+  createdAt: number;
+  dynastyId?: string;
+}
+
+export interface WrongQuestion {
+  id: string;
+  questionId: string;
+  poemId: string;
+  question: string;
+  userAnswer: string;
+  correctAnswer: string;
+  dynastyId: string;
+  createdAt: number;
+}
+
+export interface PoemQuote {
+  id: string;
+  poemId: string;
+  line: string;
+  author: string;
+  dynastyId: string;
+  note?: string;
+}
+
+export interface Almanac {
+  id: string;
+  dynastyId: string;
+  dynastyName: string;
+  period: string;
+  notes: NoteItem[];
+  wrongQuestions: WrongQuestion[];
+  poemQuotes: PoemQuote[];
+  stats: {
+    poemsStudied: number;
+    quizzesTaken: number;
+    averageAccuracy: number;
+    studyTime: number;
+  };
+  generatedAt: number;
+  isDownloaded: boolean;
+}
+
+export interface GroupMember {
+  id: string;
+  name: string;
+  avatar: string;
+  contribution: number;
+  isOnline: boolean;
+  lastActive: number;
+}
+
+export interface StudyGroup {
+  id: string;
+  name: string;
+  members: GroupMember[];
+  currentPuzzleId: string | null;
+  completedPuzzles: string[];
+  createdAt: number;
+}
+
+export interface AppState {
+  dynasties: Dynasty[];
+  poems: Poem[];
+  events: HistoricalEvent[];
+  subPeriods: DynastySubPeriod[];
+  comparisons: DynastyComparison[];
+  userProgress: UserProgress;
+  selectedDynastyId: string | null;
+  selectedPoemId: string | null;
+  dailyChallenge: DailyChallenge | null;
+  virtualPoets: VirtualPoet[];
+  socialPosts: SocialPost[];
+  chatMessages: Record<string, ChatMessage[]>;
+  selectedPoetId: string | null;
+  puzzles: Puzzle[];
+  currentPuzzleId: string | null;
+  posters: Poster[];
+  currentPosterId: string | null;
+  almanacs: Almanac[];
+  notes: NoteItem[];
+  wrongQuestions: WrongQuestion[];
+  poemQuotes: PoemQuote[];
+  studyGroup: StudyGroup | null;
+}
+
+export interface AppActions {
+  selectDynasty: (id: string | null) => void;
+  selectPoem: (id: string | null) => void;
+  markPoemAsStudied: (poemId: string) => void;
+  toggleFavorite: (poemId: string) => void;
+  saveQuizResult: (result: Omit<QuizResult, 'id' | 'date'>) => void;
+  getStudiedPoemIds: () => string[];
+  getRecommendedPoem: () => Poem | null;
+  adjustDifficulty: (accuracy: number) => 'easy' | 'medium' | 'hard';
+  getOrderedPoems: () => Poem[];
+  getSubPeriodsByDynastyId: (dynastyId: string) => DynastySubPeriod[];
+  getPoemsBySubPeriodId: (subPeriodId: string) => Poem[];
+  recordPoemAnswer: (poemId: string, isCorrect: boolean) => void;
+  markDynastyCompleted: (dynastyId: string) => void;
+  saveDailyChallengeResult: (result: DailyChallengeResult) => void;
+  generateDailyChallenge: () => void;
+  getDynastyCompletionStats: () => { completed: number; total: number; percentage: number; };
+  selectPoet: (poetId: string | null) => void;
+  likeSocialPost: (postId: string) => void;
+  commentSocialPost: (postId: string, poetId: string, content: string) => void;
+  sendChatMessage: (poetId: string, content: string) => void;
+  startPuzzle: (dynastyId: string) => void;
+  placePuzzlePiece: (puzzleId: string, pieceId: string, memberId: string) => void;
+  completePuzzle: (puzzleId: string) => void;
+  generatePoster: (dynastyId: string) => void;
+  selectPoster: (posterId: string | null) => void;
+  addNote: (note: Omit<NoteItem, 'id' | 'createdAt'>) => void;
+  addWrongQuestion: (question: Omit<WrongQuestion, 'id' | 'createdAt'>) => void;
+  addPoemQuote: (quote: Omit<PoemQuote, 'id'>) => void;
+  generateAlmanac: (dynastyId: string) => void;
+  markAlmanacDownloaded: (almanacId: string) => void;
+  joinStudyGroup: (groupId: string) => void;
+  leaveStudyGroup: () => void;
 }
 
 export type AppStore = AppState & AppActions;

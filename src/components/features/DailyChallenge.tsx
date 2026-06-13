@@ -75,8 +75,6 @@ const DailyChallenge = () => {
       yuan: '#C7B594',
       ming: '#FFC97D',
       qing: '#E89AA6',
-      nanbeichao: '#9B7E9A',
-      wudai: '#A0826D',
     };
     return colors[dynastyId] || '#8B8680';
   };
@@ -117,7 +115,7 @@ const DailyChallenge = () => {
 
             <div className="space-y-3">
               {orderedItems.map((item, displayIndex) => {
-                const color = getDynastyColor(item.dynastyId);
+                const color = getDynancyColor(item.dynastyId);
                 const isLocked = isSubmitted && !isCorrect;
                 const isCorrectPosition = isSubmitted && userOrder[displayIndex] === dailyChallenge.correctOrder[displayIndex];
 
@@ -282,7 +280,7 @@ const DailyChallenge = () => {
   );
 };
 
-function getDynastyColor(dynastyId: string): string {
+function getDynancyColor(dynastyId: string): string {
   const colors: Record<string, string> = {
     han: '#6B95BC',
     tang: '#E89AA6',
@@ -290,8 +288,6 @@ function getDynastyColor(dynastyId: string): string {
     yuan: '#C7B594',
     ming: '#FFC97D',
     qing: '#E89AA6',
-    nanbeichao: '#9B7E9A',
-    wudai: '#A0826D',
   };
   return colors[dynastyId] || '#8B8680';
 }

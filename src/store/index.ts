@@ -1,11 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { AppStore, UserProgress, QuizResult, Poem, DailyChallengeResult } from '@/types';
+import type { 
+  AppStore, UserProgress, QuizResult, Poem, DailyChallengeResult,
+  VirtualPoet, SocialPost, ChatMessage, Puzzle, Poster, Almanac,
+  NoteItem, WrongQuestion, PoemQuote, StudyGroup, PuzzlePiece
+} from '@/types';
 import { 
   dynasties, poems, events, getPoemById, getAllDynasties, 
   getPoemsByDynastyId, getSubPeriodsByDynastyId, 
   getPoemsBySubPeriodId, getPoemsByDifficulty, subPeriods,
-  getAllSubPeriods, comparisons, generateDailyChallengeData
+  getAllSubPeriods, comparisons, generateDailyChallengeData,
+  virtualPoets, socialPosts, getVirtualPoetById
 } from '@/data';
 
 const initialUserProgress: UserProgress = {
@@ -23,6 +28,67 @@ const initialUserProgress: UserProgress = {
   dailyChallengeResults: [],
 };
 
+const initialStudyGroup: StudyGroup = {
+  id: 'group-1',
+  name: '诗史共学小组',
+  members: [
+    { id: 'user-1', name: '我', avatar: '👤', contribution: 0, isOnline: true, lastActive: Date.now() },
+    { id: 'member-1', name: '诗友小明', avatar: '🧑', contribution: 3, isOnline: true, lastActive: Date.now() },
+    { id: 'member-2', name: '词客小红', avatar: '👩', contribution: 5, isOnline: false, lastActive: Date.now() - 3600000 },
+    { id: 'member-3', name: '史学者阿华', avatar: '👨', contribution: 2, isOnline: true, lastActive: Date.now() },
+    { id: 'member-4', name: '文青小雅', avatar: '👧', contribution: 4, isOnline: false, lastActive: Date.now() - 7200000 },
+  ],
+  currentPuzzleId: null,
+  completedPuzzles: [],
+  createdAt: Date.now(),
+};
+
+const generateAIRResponse = (poet: VirtualPoet, userMessage: string): string => {
+  const lowerMsg = userMessage.toLowerCase();
+  
+  if (lowerMsg.includes('介绍') || lowerMsg.includes('你是谁') || lowerMsg.includes('自我介绍')) {
+    return `某乃${poet.name}，字${poet.styleName.includes('居士') ? '' : '子美'}。${poet.bio.slice(0, 80)}。\n\n不知阁下欲与吾谈诗论道，还是询问生平？`;
+  }
+  
+  if (lowerMsg.includes('时代') || lowerMsg.includes('背景') || lowerMsg.includes('朝代')) {
+    const dynasty = dynasties.find(d => d.id === poet.dynastyId);
+    return `吾生于${dynasty?.name || '那个'}时代，${dynasty?.description.slice(0, 60)}。\n\n彼时${poet.personality.slice(0, 40)}，故吾诗文中多有此时代之印记。`;
+  }
+  
+  if (lowerMsg.includes('诗') || lowerMsg.includes('作品') || lowerMsg.includes('名句')) {
+    const work = poet.famousWorks[Math.floor(Math.random() * poet.famousWorks.length)];
+    const catchphrase = poet.catchphrases[Math.floor(Math.random() * poet.catchphrases.length)];
+    return `吾之诗作，以${work}为代表。其中「${catchphrase}」一句，最为世人传诵。\n\n不知阁下钟爱吾哪首诗作？`;
+  }
+  
+  if (lowerMsg.includes('杜甫') || lowerMsg.includes('子美')) {
+    return `子美乃吾挚友！其诗沉郁顿挫，忧国忧民，实乃诗中圣哲。「安得广厦千万间，大庇天下寒士俱欢颜」，真乃仁人心声！`;
+  }
+  
+  if (lowerMsg.includes('苏轼') || lowerMsg.includes('东坡')) {
+    return `苏子瞻才情横溢，豁达乐观，虽屡遭贬谪而不改其志。「但愿人长久，千里共婵娟」，真乃千古绝唱！`;
+  }
+  
+  if (lowerMsg.includes('朋友') || lowerMsg.includes('交友') || lowerMsg.includes('友人')) {
+    return `吾生平交友广泛，与子美、摩诘、乐天等皆为好友。闲暇时，我们常把酒言欢，吟诗作文，好不惬意！`;
+  }
+  
+  if (lowerMsg.includes('酒') || lowerMsg.includes('饮') || lowerMsg.includes('醉')) {
+    return `「人生得意须尽欢，莫使金樽空对月！」酒乃吾诗中之友，醉时文思泉涌，佳句迭出。「举杯邀明月，对影成三人」，此乃吾独酌之乐也！`;
+  }
+  
+  const randomCatchphrase = poet.catchphrases[Math.floor(Math.random() * poet.catchphrases.length)];
+  
+  const responses = [
+    `阁下所言甚是！某以为，「${randomCatchphrase}」。不知阁下以为然否？`,
+    `此问甚妙！某常言：「${randomCatchphrase}」。人生天地间，当有此等胸襟！`,
+    `哈哈，与阁下言谈甚欢！某有一言相赠：「${randomCatchphrase}」。愿与君共勉！`,
+    `读万卷书，行万里路。某平生游历四方，所见所闻，尽付诗文。「${randomCatchphrase}」，此乃某之心得也！`,
+  ];
+  
+  return responses[Math.floor(Math.random() * responses.length)];
+};
+
 export const useAppStore = create<AppStore>()(
   persist(
     (set, get) => ({
@@ -35,6 +101,19 @@ export const useAppStore = create<AppStore>()(
       selectedDynastyId: null,
       selectedPoemId: null,
       dailyChallenge: null,
+      virtualPoets: virtualPoets,
+      socialPosts: socialPosts,
+      chatMessages: {},
+      selectedPoetId: null,
+      puzzles: [],
+      currentPuzzleId: null,
+      posters: [],
+      currentPosterId: null,
+      almanacs: [],
+      notes: [],
+      wrongQuestions: [],
+      poemQuotes: [],
+      studyGroup: initialStudyGroup,
 
       selectDynasty: (id: string | null) => {
         set({ selectedDynastyId: id });
@@ -146,6 +225,23 @@ export const useAppStore = create<AppStore>()(
 
           const newDifficulty = state.adjustDifficulty(averageAccuracy);
 
+          result.questionDetails.forEach(detail => {
+            if (!detail.isCorrect) {
+              const poem = getPoemById(detail.poemId);
+              const wrongQ: WrongQuestion = {
+                id: `wrong-${Date.now()}-${detail.questionId}`,
+                questionId: detail.questionId,
+                poemId: detail.poemId,
+                question: detail.question,
+                userAnswer: detail.userAnswer,
+                correctAnswer: detail.correctAnswer,
+                dynastyId: poem?.dynastyId || '',
+                createdAt: Date.now(),
+              };
+              state.wrongQuestions.push(wrongQ);
+            }
+          });
+
           return {
             userProgress: {
               ...state.userProgress,
@@ -154,6 +250,7 @@ export const useAppStore = create<AppStore>()(
               quizResults: allResults,
               currentDifficulty: newDifficulty,
             },
+            wrongQuestions: [...state.wrongQuestions],
           };
         });
       },
@@ -264,6 +361,414 @@ export const useAppStore = create<AppStore>()(
         const percentage = total > 0 ? (completed / total) * 100 : 0;
         return { completed, total, percentage };
       },
+
+      selectPoet: (poetId: string | null) => {
+        set({ selectedPoetId: poetId });
+        
+        if (poetId) {
+          const state = get();
+          const existingMessages = state.chatMessages[poetId];
+          if (!existingMessages || existingMessages.length === 0) {
+            const poet = getVirtualPoetById(poetId);
+            if (poet) {
+              const greeting: ChatMessage = {
+                id: `msg-${Date.now()}`,
+                content: `某乃${poet.name}，字${poet.styleName}。不知阁下来访，有何见教？`,
+                isUser: false,
+                timestamp: Date.now(),
+              };
+              set({
+                chatMessages: {
+                  ...state.chatMessages,
+                  [poetId]: [greeting],
+                },
+              });
+            }
+          }
+        }
+      },
+
+      likeSocialPost: (postId: string) => {
+        set((state) => {
+          const updatedPosts = state.socialPosts.map(post => {
+            if (post.id === postId) {
+              return {
+                ...post,
+                likedByUser: !post.likedByUser,
+                likes: post.likedByUser ? post.likes - 1 : post.likes + 1,
+              };
+            }
+            return post;
+          });
+          return { socialPosts: updatedPosts };
+        });
+      },
+
+      commentSocialPost: (postId: string, poetId: string, content: string) => {
+        set((state) => {
+          const updatedPosts = state.socialPosts.map(post => {
+            if (post.id === postId) {
+              return {
+                ...post,
+                comments: [
+                  ...post.comments,
+                  {
+                    id: `comment-${Date.now()}`,
+                    poetId,
+                    content,
+                    timestamp: Date.now(),
+                  },
+                ],
+              };
+            }
+            return post;
+          });
+          return { socialPosts: updatedPosts };
+        });
+      },
+
+      sendChatMessage: (poetId: string, content: string) => {
+        set((state) => {
+          const userMessage: ChatMessage = {
+            id: `msg-${Date.now()}`,
+            content,
+            isUser: true,
+            timestamp: Date.now(),
+          };
+
+          const existingMessages = state.chatMessages[poetId] || [];
+          const updatedMessages = [...existingMessages, userMessage];
+
+          const poet = getVirtualPoetById(poetId);
+          if (poet) {
+            setTimeout(() => {
+              const aiResponse = generateAIRResponse(poet, content);
+              const aiMessage: ChatMessage = {
+                id: `msg-${Date.now() + 1}`,
+                content: aiResponse,
+                isUser: false,
+                timestamp: Date.now(),
+              };
+              
+              set((state) => ({
+                chatMessages: {
+                  ...state.chatMessages,
+                  [poetId]: [...(state.chatMessages[poetId] || []), aiMessage],
+                },
+              }));
+            }, 1000 + Math.random() * 1000);
+          }
+
+          return {
+            chatMessages: {
+              ...state.chatMessages,
+              [poetId]: updatedMessages,
+            },
+          };
+        });
+      },
+
+      startPuzzle: (dynastyId: string) => {
+        set((state) => {
+          const dynasty = state.dynasties.find(d => d.id === dynastyId);
+          if (!dynasty) return state;
+
+          const existingPuzzle = state.puzzles.find(p => p.dynastyId === dynastyId);
+          if (existingPuzzle) {
+            return { currentPuzzleId: existingPuzzle.id };
+          }
+
+          const dynastyEvents = events.filter(e => e.dynastyId === dynastyId);
+          const dynastyPoets = virtualPoets.filter(p => p.dynastyId === dynastyId);
+          const dynastyPoems = poems.filter(p => p.dynastyId === dynastyId);
+
+          const pieces: PuzzlePiece[] = [];
+          let position = 0;
+
+          dynastyEvents.slice(0, 3).forEach(event => {
+            pieces.push({
+              id: `piece-event-${event.id}`,
+              dynastyId,
+              position: position++,
+              content: event.name,
+              type: 'event',
+              isPlaced: false,
+            });
+          });
+
+          dynastyPoets.slice(0, 3).forEach(poet => {
+            pieces.push({
+              id: `piece-poet-${poet.id}`,
+              dynastyId,
+              position: position++,
+              content: poet.name,
+              type: 'poet',
+              isPlaced: false,
+            });
+          });
+
+          dynastyPoems.slice(0, 2).forEach(poem => {
+            pieces.push({
+              id: `piece-poem-${poem.id}`,
+              dynastyId,
+              position: position++,
+              content: poem.famousLine,
+              type: 'poem',
+              isPlaced: false,
+            });
+          });
+
+          pieces.push({
+            id: `piece-achievement-${dynastyId}`,
+            dynastyId,
+            position: position++,
+            content: dynasty.keyEvents[0] || '盛世',
+            type: 'achievement',
+            isPlaced: false,
+          });
+
+          const newPuzzle: Puzzle = {
+            id: `puzzle-${dynastyId}-${Date.now()}`,
+            dynastyId,
+            name: `${dynasty.name}拼图`,
+            pieces,
+            totalPieces: pieces.length,
+            isCompleted: false,
+          };
+
+          return {
+            puzzles: [...state.puzzles, newPuzzle],
+            currentPuzzleId: newPuzzle.id,
+          };
+        });
+      },
+
+      placePuzzlePiece: (puzzleId: string, pieceId: string, memberId: string) => {
+        set((state) => {
+          const updatedPuzzles = state.puzzles.map(puzzle => {
+            if (puzzle.id === puzzleId) {
+              const updatedPieces = puzzle.pieces.map(piece => {
+                if (piece.id === pieceId && !piece.isPlaced) {
+                  return { ...piece, isPlaced: true, placedBy: memberId };
+                }
+                return piece;
+              });
+
+              const allPlaced = updatedPieces.every(p => p.isPlaced);
+
+              return {
+                ...puzzle,
+                pieces: updatedPieces,
+                isCompleted: allPlaced,
+                completedAt: allPlaced ? Date.now() : undefined,
+              };
+            }
+            return puzzle;
+          });
+
+          const updatedGroup = state.studyGroup ? {
+            ...state.studyGroup,
+            members: state.studyGroup.members.map(member => {
+              if (member.id === memberId) {
+                return { ...member, contribution: member.contribution + 1 };
+              }
+              return member;
+            }),
+          } : state.studyGroup;
+
+          return { puzzles: updatedPuzzles, studyGroup: updatedGroup };
+        });
+      },
+
+      completePuzzle: (puzzleId: string) => {
+        set((state) => {
+          const updatedPuzzles = state.puzzles.map(puzzle => {
+            if (puzzle.id === puzzleId) {
+              return { ...puzzle, isCompleted: true, completedAt: Date.now() };
+            }
+            return puzzle;
+          });
+
+          const puzzle = state.puzzles.find(p => p.id === puzzleId);
+          const updatedGroup = state.studyGroup && puzzle ? {
+            ...state.studyGroup,
+            completedPuzzles: [...state.studyGroup.completedPuzzles, puzzleId],
+            currentPuzzleId: null,
+          } : state.studyGroup;
+
+          return { puzzles: updatedPuzzles, studyGroup: updatedGroup };
+        });
+      },
+
+      generatePoster: (dynastyId: string) => {
+        set((state) => {
+          const dynasty = state.dynasties.find(d => d.id === dynastyId);
+          if (!dynasty) return state;
+
+          const dynastyPoems = poems.filter(p => p.dynastyId === dynastyId);
+          const dynastyEvents = events.filter(e => e.dynastyId === dynastyId);
+          const dynastyPoets = virtualPoets.filter(p => p.dynastyId === dynastyId);
+
+          const colorSchemes: Record<string, { bg: string; text: string; accent: string }> = {
+            tang: { bg: '#FFF5F5', text: '#742A2A', accent: '#C41E3A' },
+            song: { bg: '#F0F7FF', text: '#1E3A5F', accent: '#2B5C8A' },
+            han: { bg: '#F0F4F8', text: '#1A365D', accent: '#6B95BC' },
+            yuan: { bg: '#FAF7F2', text: '#5C4A3D', accent: '#C7B594' },
+            ming: { bg: '#FFF8F0', text: '#7A5C2E', accent: '#FFC97D' },
+            qing: { bg: '#FFF5F5', text: '#742A2A', accent: '#E89AA6' },
+            nanbeichao: { bg: '#F0FFF4', text: '#1A4731', accent: '#2E8B57' },
+          };
+
+          const colors = colorSchemes[dynastyId] || colorSchemes.tang;
+
+          const timelineContent = dynastyEvents
+            .slice(0, 4)
+            .map(e => `${e.year}年：${e.name}`)
+            .join('\n');
+
+          const poemsContent = dynastyPoems
+            .slice(0, 3)
+            .map(p => `《${p.title}》- ${p.author}\n「${p.famousLine}」`)
+            .join('\n\n');
+
+          const poetsContent = dynastyPoets
+            .slice(0, 4)
+            .map(p => `${p.name}（${p.styleName}）`)
+            .join('、');
+
+          const studiedCount = dynastyPoems.filter(
+            p => state.userProgress.poemProgress[p.id]?.isStudied
+          ).length;
+
+          const newPoster: Poster = {
+            id: `poster-${dynastyId}-${Date.now()}`,
+            dynastyId,
+            title: `${dynasty.name}知识海报`,
+            subtitle: `${dynasty.startYear > 0 ? '公元' : '公元前'}${Math.abs(dynasty.startYear)}年 - ${dynasty.endYear > 0 ? '公元' : '公元前'}${Math.abs(dynasty.endYear)}年`,
+            sections: [
+              { id: 's1', type: 'title', title: '朝代简介', content: dynasty.description },
+              { id: 's2', type: 'timeline', title: '重要事件', content: timelineContent },
+              { id: 's3', type: 'poems', title: '经典诗词', content: poemsContent },
+              { id: 's4', type: 'poets', title: '代表诗人', content: poetsContent },
+              { id: 's5', type: 'stats', title: '学习统计', content: `已学诗词：${studiedCount}/${dynastyPoems.length}首\n都城：${dynasty.capital}` },
+            ],
+            backgroundColor: colors.bg,
+            textColor: colors.text,
+            accentColor: colors.accent,
+            createdAt: Date.now(),
+            isGenerated: true,
+          };
+
+          return {
+            posters: [...state.posters, newPoster],
+            currentPosterId: newPoster.id,
+          };
+        });
+      },
+
+      selectPoster: (posterId: string | null) => {
+        set({ currentPosterId: posterId });
+      },
+
+      addNote: (note: Omit<NoteItem, 'id' | 'createdAt'>) => {
+        set((state) => {
+          const newNote: NoteItem = {
+            ...note,
+            id: `note-${Date.now()}`,
+            createdAt: Date.now(),
+          };
+          return { notes: [...state.notes, newNote] };
+        });
+      },
+
+      addWrongQuestion: (question: Omit<WrongQuestion, 'id' | 'createdAt'>) => {
+        set((state) => {
+          const newQuestion: WrongQuestion = {
+            ...question,
+            id: `wrong-${Date.now()}`,
+            createdAt: Date.now(),
+          };
+          return { wrongQuestions: [...state.wrongQuestions, newQuestion] };
+        });
+      },
+
+      addPoemQuote: (quote: Omit<PoemQuote, 'id'>) => {
+        set((state) => {
+          const newQuote: PoemQuote = {
+            ...quote,
+            id: `quote-${Date.now()}`,
+          };
+          return { poemQuotes: [...state.poemQuotes, newQuote] };
+        });
+      },
+
+      generateAlmanac: (dynastyId: string) => {
+        set((state) => {
+          const dynasty = state.dynasties.find(d => d.id === dynastyId);
+          if (!dynasty) return state;
+
+          const dynastyNotes = state.notes.filter(n => n.dynastyId === dynastyId);
+          const dynastyWrongQuestions = state.wrongQuestions.filter(q => q.dynastyId === dynastyId);
+          
+          const dynastyPoemIds = poems.filter(p => p.dynastyId === dynastyId).map(p => p.id);
+          const dynastyPoemQuotes = state.poemQuotes.filter(q => dynastyPoemIds.includes(q.poemId));
+          
+          const dynastyPoems = poems.filter(p => p.dynastyId === dynastyId);
+          const studiedPoems = dynastyPoems.filter(
+            p => state.userProgress.poemProgress[p.id]?.isStudied
+          );
+
+          const quizzesForDynasty = state.userProgress.quizResults.filter(r => {
+            return r.questionDetails.some(d => dynastyPoemIds.includes(d.poemId));
+          });
+
+          const totalQuestions = quizzesForDynasty.reduce((sum, r) => sum + r.totalQuestions, 0);
+          const totalCorrect = quizzesForDynasty.reduce((sum, r) => sum + r.correctAnswers, 0);
+
+          const formatYear = (year: number) => 
+            year > 0 ? `公元${year}年` : `公元前${Math.abs(year)}年`;
+
+          const newAlmanac: Almanac = {
+            id: `almanac-${dynastyId}-${Date.now()}`,
+            dynastyId,
+            dynastyName: dynasty.name,
+            period: `${formatYear(dynasty.startYear)} - ${formatYear(dynasty.endYear)}`,
+            notes: dynastyNotes,
+            wrongQuestions: dynastyWrongQuestions,
+            poemQuotes: dynastyPoemQuotes,
+            stats: {
+              poemsStudied: studiedPoems.length,
+              quizzesTaken: quizzesForDynasty.length,
+              averageAccuracy: totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0,
+              studyTime: quizzesForDynasty.reduce((sum, r) => sum + r.timeSpent, 0),
+            },
+            generatedAt: Date.now(),
+            isDownloaded: false,
+          };
+
+          return { almanacs: [...state.almanacs, newAlmanac] };
+        });
+      },
+
+      markAlmanacDownloaded: (almanacId: string) => {
+        set((state) => {
+          const updatedAlmanacs = state.almanacs.map(almanac => {
+            if (almanac.id === almanacId) {
+              return { ...almanac, isDownloaded: true };
+            }
+            return almanac;
+          });
+          return { almanacs: updatedAlmanacs };
+        });
+      },
+
+      joinStudyGroup: (groupId: string) => {
+        set({ studyGroup: initialStudyGroup });
+      },
+
+      leaveStudyGroup: () => {
+        set({ studyGroup: null });
+      },
     }),
     {
       name: 'shishi-zhixue-storage',
@@ -271,6 +776,15 @@ export const useAppStore = create<AppStore>()(
         userProgress: state.userProgress,
         selectedDynastyId: state.selectedDynastyId,
         selectedPoemId: state.selectedPoemId,
+        chatMessages: state.chatMessages,
+        puzzles: state.puzzles,
+        posters: state.posters,
+        almanacs: state.almanacs,
+        notes: state.notes,
+        wrongQuestions: state.wrongQuestions,
+        poemQuotes: state.poemQuotes,
+        socialPosts: state.socialPosts,
+        studyGroup: state.studyGroup,
       }),
     }
   )
