@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { AppStore, UserProgress, QuizResult } from '@/types';
-import { dynasties, poems, events, getPoemById, getAllDynasties, getPoemsByDynastyId } from '@/data';
+import type { AppStore, UserProgress, QuizResult, Poem } from '@/types';
+import { 
+  dynasties, poems, events, getPoemById, getAllDynasties, 
+  getPoemsByDynastyId, getSubPeriodsByDynastyId, 
+  getPoemsBySubPeriodId, getPoemsByDifficulty, subPeriods,
+  getAllSubPeriods
+} from '@/data';
 
 const initialUserProgress: UserProgress = {
   id: 'user-1',
@@ -11,6 +16,9 @@ const initialUserProgress: UserProgress = {
   averageAccuracy: 0,
   poemProgress: {},
   quizResults: [],
+  currentDifficulty: 'easy',
+  poemOrderPreference: [],
+  subPeriodProgress: {},
 };
 
 export const useAppStore = create<AppStore>()(
@@ -19,6 +27,7 @@ export const useAppStore = create<AppStore>()(
       dynasties: getAllDynasties(),
       poems: poems,
       events: events,
+      subPeriods: getAllSubPeriods(),
       userProgress: initialUserProgress,
       selectedDynastyId: null,
       selectedPoemId: null,
@@ -50,6 +59,8 @@ export const useAppStore = create<AppStore>()(
               isFavorite: existingProgress?.isFavorite || false,
               studyCount: (existingProgress?.studyCount || 0) + 1,
               lastStudyTime: now,
+              correctCount: existingProgress?.correctCount || 0,
+              wrongCount: existingProgress?.wrongCount || 0,
             },
           };
 
@@ -82,6 +93,33 @@ export const useAppStore = create<AppStore>()(
                   isFavorite: !existingProgress?.isFavorite,
                   studyCount: existingProgress?.studyCount || 0,
                   lastStudyTime: existingProgress?.lastStudyTime || now,
+                  correctCount: existingProgress?.correctCount || 0,
+                  wrongCount: existingProgress?.wrongCount || 0,
+                },
+              },
+            },
+          };
+        });
+      },
+
+      recordPoemAnswer: (poemId: string, isCorrect: boolean) => {
+        set((state) => {
+          const existingProgress = state.userProgress.poemProgress[poemId];
+          const now = Date.now();
+
+          return {
+            userProgress: {
+              ...state.userProgress,
+              poemProgress: {
+                ...state.userProgress.poemProgress,
+                [poemId]: {
+                  poemId,
+                  isStudied: existingProgress?.isStudied || true,
+                  isFavorite: existingProgress?.isFavorite || false,
+                  studyCount: existingProgress?.studyCount || 1,
+                  lastStudyTime: now,
+                  correctCount: (existingProgress?.correctCount || 0) + (isCorrect ? 1 : 0),
+                  wrongCount: (existingProgress?.wrongCount || 0) + (isCorrect ? 0 : 1),
                 },
               },
             },
@@ -102,15 +140,24 @@ export const useAppStore = create<AppStore>()(
           const totalQuestions = allResults.reduce((sum, r) => sum + r.totalQuestions, 0);
           const averageAccuracy = totalQuestions > 0 ? totalCorrect / totalQuestions : 0;
 
+          const newDifficulty = state.adjustDifficulty(averageAccuracy);
+
           return {
             userProgress: {
               ...state.userProgress,
               totalQuizzesTaken: state.userProgress.totalQuizzesTaken + 1,
               averageAccuracy,
               quizResults: allResults,
+              currentDifficulty: newDifficulty,
             },
           };
         });
+      },
+
+      adjustDifficulty: (accuracy: number): 'easy' | 'medium' | 'hard' => {
+        if (accuracy >= 0.85) return 'hard';
+        if (accuracy >= 0.6) return 'medium';
+        return 'easy';
       },
 
       getStudiedPoemIds: () => {
@@ -122,14 +169,57 @@ export const useAppStore = create<AppStore>()(
 
       getRecommendedPoem: () => {
         const state = get();
+        const orderedPoems = state.getOrderedPoems();
         const studiedIds = state.getStudiedPoemIds();
-        const unstudiedPoems = state.poems.filter(p => !studiedIds.includes(p.id));
+        const unstudiedPoems = orderedPoems.filter(p => !studiedIds.includes(p.id));
         
         if (unstudiedPoems.length === 0) {
-          return state.poems[0] || null;
+          return orderedPoems[0] || null;
         }
         
-        return unstudiedPoems[Math.floor(Math.random() * unstudiedPoems.length)];
+        return unstudiedPoems[0];
+      },
+
+      getOrderedPoems: (): Poem[] => {
+        const state = get();
+        const currentDifficulty = state.userProgress.currentDifficulty;
+        const allPoems = [...state.poems];
+        
+        const difficultyOrder: Record<string, number> = {
+          easy: 0,
+          medium: 1,
+          hard: 2,
+        };
+
+        const userPreference = state.userProgress.poemOrderPreference;
+        
+        if (userPreference.length > 0) {
+          const preferredPoems = userPreference
+            .map(id => allPoems.find(p => p.id === id))
+            .filter((p): p is Poem => p !== undefined);
+          const otherPoems = allPoems.filter(p => !userPreference.includes(p.id));
+          return [...preferredPoems, ...otherPoems];
+        }
+
+        return allPoems.sort((a, b) => {
+          const aDifficulty = difficultyOrder[a.difficulty] || 1;
+          const bDifficulty = difficultyOrder[b.difficulty] || 1;
+          const currentDiffOrder = difficultyOrder[currentDifficulty] || 1;
+          
+          const aDiff = Math.abs(aDifficulty - currentDiffOrder);
+          const bDiff = Math.abs(bDifficulty - currentDiffOrder);
+          
+          if (aDiff !== bDiff) return aDiff - bDiff;
+          return aDifficulty - bDifficulty;
+        });
+      },
+
+      getSubPeriodsByDynastyId: (dynastyId: string) => {
+        return getSubPeriodsByDynastyId(dynastyId);
+      },
+
+      getPoemsBySubPeriodId: (subPeriodId: string) => {
+        return getPoemsBySubPeriodId(subPeriodId);
       },
     }),
     {

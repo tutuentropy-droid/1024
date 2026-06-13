@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, RotateCcw, Check, X, Clock, Target, Award, BookOpen, ChevronRight, Lightbulb } from 'lucide-react';
+import { Play, RotateCcw, Check, X, Clock, Target, Award, BookOpen, ChevronRight, Lightbulb, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store';
 import { generateQuestions, checkAnswer, getQuestionTypeLabel } from '@/services/quizService';
@@ -48,7 +48,8 @@ const QuizModule = () => {
     : null;
 
   const startQuiz = useCallback(() => {
-    const questions = generateQuestions(availablePoems, dynasties, 5);
+    const currentDifficulty = userProgress.currentDifficulty;
+    const questions = generateQuestions(availablePoems, dynasties, 5, currentDifficulty);
     setState({
       ...initialState,
       questions,
@@ -56,7 +57,7 @@ const QuizModule = () => {
     });
     setFillBlankInput('');
     setShowExplanation(false);
-  }, [availablePoems, dynasties]);
+  }, [availablePoems, dynasties, userProgress.currentDifficulty]);
 
   const handleAnswer = (answer: string) => {
     if (!currentQuestion || currentAnswer) return;
@@ -218,6 +219,9 @@ const QuizModule = () => {
         }, 0)
       : 0;
 
+    const newDifficulty = userProgress.currentDifficulty;
+    const difficultyChanged = userProgress.quizResults.length > 1;
+
     return (
       <div className="max-w-2xl mx-auto py-12 px-4">
         <div className="card text-center py-12 animate-fade-in-up">
@@ -234,11 +238,49 @@ const QuizModule = () => {
             测试完成！
           </h2>
           
-          <p className="text-ink-200 mb-8">
+          <p className="text-ink-200 mb-6">
             {accuracy >= 80 ? '太棒了！你对诗词历史的掌握非常好！' :
              accuracy >= 60 ? '不错！继续努力，你会做得更好！' :
              '加油！多学习几首诗词再来挑战吧！'}
           </p>
+
+          {difficultyChanged && (
+            <div className={cn(
+              'mb-6 p-4 rounded-xl mx-auto max-w-md animate-fade-in-up',
+              'border-2',
+              newDifficulty === 'hard' ? 'bg-cinnabar-50 border-cinnabar-200' :
+              newDifficulty === 'medium' ? 'bg-gold-50 border-gold-200' :
+              'bg-jade-50 border-jade-200'
+            )}>
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Sparkles className={cn(
+                  'w-5 h-5',
+                  newDifficulty === 'hard' ? 'text-cinnabar-400' :
+                  newDifficulty === 'medium' ? 'text-gold-400' :
+                  'text-jade-400'
+                )} />
+                <span className={cn(
+                  'font-medium',
+                  newDifficulty === 'hard' ? 'text-cinnabar-400' :
+                  newDifficulty === 'medium' ? 'text-gold-400' :
+                  'text-jade-400'
+                )}>
+                  智能难度调整
+                </span>
+              </div>
+              <p className="text-sm text-ink-300">
+                根据你的测试表现，系统已将学习难度调整为：
+                <span className={cn(
+                  'font-bold ml-1',
+                  newDifficulty === 'hard' ? 'text-cinnabar-400' :
+                  newDifficulty === 'medium' ? 'text-gold-400' :
+                  'text-jade-400'
+                )}>
+                  {newDifficulty === 'hard' ? '困难' : newDifficulty === 'medium' ? '中等' : '简单'}
+                </span>
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-4 mb-8 max-w-md mx-auto">
             <div className="p-4 bg-paper-100 rounded-xl">

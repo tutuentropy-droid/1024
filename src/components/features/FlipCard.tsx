@@ -1,38 +1,119 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, RotateCcw, Heart, Check, BookOpen, User, Calendar, Tag, Building2, Coins, Users, Palette } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCcw, Heart, Check, BookOpen, User, Calendar, Tag, Building2, Coins, Users, Palette, Volume2, VolumeX, Languages, Pause, Lightbulb, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store';
-import { getPoemById, getDynastyByPoemId, getAllPoems, getRelatedEventsByPoemId } from '@/data';
-import type { Poem } from '@/types';
+import { getPoemById, getDynastyByPoemId, getRelatedEventsByPoemId, getPoemsByDynastyId } from '@/data';
+import type { Poem, PoemLine } from '@/types';
 
 interface FlipCardProps {
   poemId?: string;
   showNavigation?: boolean;
 }
 
+const formatYear = (year: number): string => {
+  if (year < 0) return `${Math.abs(year)} BC`;
+  return `${year} AD`;
+};
+
 const FlipCard = ({ poemId, showNavigation = true }: FlipCardProps) => {
   const params = useParams();
   const navigate = useNavigate();
-  const { userProgress, markPoemAsStudied, toggleFavorite } = useAppStore();
+  const { userProgress, markPoemAsStudied, toggleFavorite, getOrderedPoems } = useAppStore();
   
   const currentPoemId = poemId || params.poemId;
   const poem = currentPoemId ? getPoemById(currentPoemId) : null;
   const dynasty = poem ? getDynastyByPoemId(poem.id) : null;
   const relatedEvents = poem ? getRelatedEventsByPoemId(poem.id) : [];
   
-  const allPoems = getAllPoems();
-  const currentIndex = poem ? allPoems.findIndex(p => p.id === poem.id) : -1;
+  const dynastyPoems = dynasty ? getPoemsByDynastyId(dynasty.id) : [];
+  const currentIndex = poem ? dynastyPoems.findIndex(p => p.id === poem.id) : -1;
   
   const [isFlipped, setIsFlipped] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [expandedLineIndex, setExpandedLineIndex] = useState<number | null>(null);
+  const [speechSupported, setSpeechSupported] = useState(true);
+  
+  const synthRef = useRef<SpeechSynthesis | null>(null);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const poemProgress = poem ? userProgress.poemProgress[poem.id] : undefined;
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      synthRef.current = window.speechSynthesis;
+    } else {
+      setSpeechSupported(false);
+    }
+
+    return () => {
+      if (synthRef.current) {
+        synthRef.current.cancel();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     setIsFlipped(false);
+    setIsSpeaking(false);
+    setExpandedLineIndex(null);
+    setShowTranslation(false);
+    if (synthRef.current) {
+      synthRef.current.cancel();
+    }
   }, [currentPoemId]);
+
+  const getPoemText = useCallback(() => {
+    if (!poem) return '';
+    return poem.content
+      .map((line: PoemLine | string) => 
+        typeof line === 'string' ? line : line.text
+      )
+      .join(' ');
+  }, [poem]);
+
+  const handleSpeak = useCallback(() => {
+    if (!synthRef.current || !poem) return;
+
+    if (isSpeaking) {
+      synthRef.current.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const text = getPoemText();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'zh-CN';
+    utterance.rate = 0.8;
+    utterance.pitch = 1;
+    
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    
+    utteranceRef.current = utterance;
+    synthRef.current.speak(utterance);
+  }, [isSpeaking, poem, getPoemText]);
+
+  const toggleLineTranslation = (index: number) => {
+    setExpandedLineIndex(expandedLineIndex === index ? null : index);
+  };
+
+  const getLineText = (line: PoemLine | string): string => {
+    return typeof line === 'string' ? line : line.text;
+  };
+
+  const getLineTranslation = (line: PoemLine | string): string => {
+    return typeof line === 'string' ? '' : line.translation;
+  };
+
+  const toggleAllTranslations = () => {
+    setShowTranslation(!showTranslation);
+    setExpandedLineIndex(null);
+  };
 
   const handleFlip = () => {
     if (isAnimating) return;
@@ -41,16 +122,20 @@ const FlipCard = ({ poemId, showNavigation = true }: FlipCardProps) => {
     setTimeout(() => setIsAnimating(false), 600);
   };
 
+  const handleBack = () => {
+    navigate(-1);
+  };
+
   const handlePrev = () => {
     if (currentIndex > 0) {
-      const prevPoem = allPoems[currentIndex - 1];
+      const prevPoem = dynastyPoems[currentIndex - 1];
       navigate(`/card/${prevPoem.id}`);
     }
   };
 
   const handleNext = () => {
-    if (currentIndex < allPoems.length - 1) {
-      const nextPoem = allPoems[currentIndex + 1];
+    if (currentIndex < dynastyPoems.length - 1) {
+      const nextPoem = dynastyPoems[currentIndex + 1];
       navigate(`/card/${nextPoem.id}`);
     }
   };
@@ -82,6 +167,8 @@ const FlipCard = ({ poemId, showNavigation = true }: FlipCardProps) => {
     economy: Coins,
     society: Users,
     culture: Palette,
+    education: BookOpen,
+    philosophy: Lightbulb,
   };
 
   const insightLabels: Record<string, string> = {
@@ -89,12 +176,21 @@ const FlipCard = ({ poemId, showNavigation = true }: FlipCardProps) => {
     economy: '经济',
     society: '社会',
     culture: '文化',
+    education: '教育',
+    philosophy: '哲学',
   };
 
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleBack}
+            className="p-2 rounded-lg bg-paper-200 text-ink-200 hover:bg-paper-300 transition-all duration-300"
+            title="返回"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
           <div
             className="w-3 h-3 rounded-full"
             style={{ backgroundColor: dynasty.color }}
@@ -102,7 +198,7 @@ const FlipCard = ({ poemId, showNavigation = true }: FlipCardProps) => {
           <div>
             <h2 className="title-display text-2xl text-ink-400">{dynasty.name}</h2>
             <p className="text-sm text-ink-100">
-              第 {currentIndex + 1} / {allPoems.length} 首
+              第 {currentIndex + 1} / {dynastyPoems.length} 首
             </p>
           </div>
         </div>
@@ -124,42 +220,123 @@ const FlipCard = ({ poemId, showNavigation = true }: FlipCardProps) => {
           style={{ transformStyle: 'preserve-3d' }}
           onClick={handleFlip}
         >
-          <div
-            className="absolute inset-0 backface-hidden rounded-2xl overflow-hidden"
+          <div className="absolute inset-0 backface-hidden rounded-2xl overflow-hidden"
             style={{ backfaceVisibility: 'hidden' }}
           >
-            <div className="w-full h-full bg-gradient-to-br from-paper-50 via-paper-100 to-paper-200 p-8 md:p-12 flex flex-col shadow-card border border-paper-300">
+            <div className="w-full h-full bg-gradient-to-br from-paper-50 via-paper-100 to-paper-200 p-6 md:p-10 flex flex-col shadow-card border border-paper-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  {speechSupported && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSpeak();
+                      }}
+                      className={cn(
+                        'p-2 rounded-lg transition-all duration-300 flex items-center gap-1.5',
+                        isSpeaking 
+                          ? 'bg-cobalt-100 text-cobalt-400' 
+                          : 'bg-paper-200 text-ink-200 hover:bg-paper-300'
+                      )}
+                      title={isSpeaking ? '暂停朗读' : '朗读诗词'}
+                    >
+                      {isSpeaking ? (
+                        <>
+                          <Pause className="w-4 h-4" />
+                          <span className="text-xs">暂停</span>
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 className="w-4 h-4" />
+                          <span className="text-xs">朗读</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleAllTranslations();
+                    }}
+                    className={cn(
+                      'p-2 rounded-lg transition-all duration-300 flex items-center gap-1.5',
+                      showTranslation 
+                        ? 'bg-jade-100 text-jade-400' 
+                        : 'bg-paper-200 text-ink-200 hover:bg-paper-300'
+                    )}
+                    title={showTranslation ? '隐藏翻译' : '显示翻译'}
+                  >
+                    <Languages className="w-4 h-4" />
+                    <span className="text-xs">{showTranslation ? '隐藏译' : '显示译'}</span>
+                  </button>
+                </div>
+                <span className={cn(
+                  'px-2 py-1 rounded text-xs font-medium',
+                  poem.difficulty === 'easy' ? 'text-jade-300 bg-jade-50' :
+                  poem.difficulty === 'medium' ? 'text-gold-300 bg-gold-50' :
+                  'text-cinnabar-300 bg-cinnabar-50'
+                )}>
+                  {poem.difficulty === 'easy' ? '简单' : poem.difficulty === 'medium' ? '中等' : '困难'}
+                </span>
+              </div>
+
               <div className="flex-1 flex flex-col items-center justify-center text-center">
-                <h3 className="title-display text-3xl md:text-4xl text-ink-400 mb-2">
+                <h3 className="title-display text-2xl md:text-3xl text-ink-400 mb-2">
                   《{poem.title}》
                 </h3>
-                <p className="text-ink-100 mb-8 flex items-center gap-2">
+                <p className="text-ink-100 mb-6 flex items-center gap-2">
                   <User className="w-4 h-4" />
                   {poem.author}
                 </p>
                 
-                <div className="space-y-4 mb-8">
-                  {poem.content.map((line, index) => (
-                    <p
-                      key={index}
-                      className="poem-text text-xl md:text-2xl leading-relaxed"
-                    >
-                      {line}
-                    </p>
-                  ))}
+                <div className="space-y-3 mb-6 w-full max-w-lg">
+                  {poem.content.map((line, index) => {
+                    const lineText = getLineText(line);
+                    const lineTranslation = getLineTranslation(line);
+                    const isExpanded = expandedLineIndex === index;
+                    const showThisTranslation = showTranslation || isExpanded;
+
+                    return (
+                      <div
+                        key={index}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (lineTranslation) toggleLineTranslation(index);
+                        }}
+                        className={cn(
+                          'p-3 rounded-xl transition-all duration-300',
+                          lineTranslation && 'cursor-pointer hover:bg-paper-200/50',
+                          (isExpanded || showTranslation) && 'bg-paper-200/50'
+                        )}
+                      >
+                        <p className="poem-text text-lg md:text-xl leading-relaxed text-ink-400">
+                          {lineText}
+                        </p>
+                        {(showThisTranslation && lineTranslation) && (
+                          <p className={cn(
+                            'text-sm mt-2 leading-relaxed transition-all duration-300',
+                            'text-jade-400 font-medium',
+                            isExpanded ? 'animate-fade-in-up' : ''
+                          )}>
+                            「{lineTranslation}」
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
 
-                <div className="mt-auto pt-6 border-t border-paper-300 w-full">
-                  <p className="text-sm text-ink-100 mb-2">名句</p>
-                  <p className="font-kai text-lg text-cinnabar-300">
+                <div className="mt-auto pt-4 border-t border-paper-300 w-full">
+                  <p className="text-xs text-ink-100 mb-1.5">名句</p>
+                  <p className="font-kai text-base md:text-lg text-cinnabar-300">
                     {poem.famousLine}
                   </p>
                 </div>
               </div>
 
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-ink-100 flex items-center gap-2">
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs text-ink-100 flex items-center gap-2">
                 <RotateCcw className="w-3 h-3" />
-                点击卡片翻转查看历史解读
+                点击卡片翻转查看历史解读 · 点击诗句查看白话翻译
               </div>
             </div>
           </div>
@@ -226,7 +403,7 @@ const FlipCard = ({ poemId, showNavigation = true }: FlipCardProps) => {
                             {event.name}
                           </span>
                           <span className="text-xs text-ink-100">
-                            {event.year} AD
+                            {formatYear(event.year)}
                           </span>
                         </div>
                         <p className="text-xs text-ink-200">
@@ -312,10 +489,10 @@ const FlipCard = ({ poemId, showNavigation = true }: FlipCardProps) => {
             </button>
             <button
               onClick={handleNext}
-              disabled={currentIndex >= allPoems.length - 1}
+              disabled={currentIndex >= dynastyPoems.length - 1}
               className={cn(
                 'p-3 rounded-lg transition-all duration-300',
-                currentIndex >= allPoems.length - 1
+                currentIndex >= dynastyPoems.length - 1
                   ? 'bg-paper-200 text-ink-100 cursor-not-allowed'
                   : 'bg-cobalt-50 text-cobalt-300 hover:bg-cobalt-100'
               )}
