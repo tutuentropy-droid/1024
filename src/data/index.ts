@@ -7,12 +7,14 @@ import { virtualPoets, getVirtualPoetById, getAllVirtualPoets, getVirtualPoetsBy
 import { socialPosts, getSocialPostsByDynastyId, getSocialPostsByPoetId } from './socialPosts';
 import { audioTheaters, getAllAudioTheaters, getAudioTheaterById, getAudioTheatersByDynastyId } from './audioTheaters';
 import { adventures, getAllAdventures, getAdventureById, getAdventuresByDynastyId } from './adventures';
-import type { Dynasty, Poem, HistoricalEvent, DynastySubPeriod, DynastyComparison, DailyChallenge, DailyChallengeItem, VirtualPoet, SocialPost, AudioTheater, Adventure } from '@/types';
+import { geoLocations, getAllGeoLocations, getGeoLocationsByDynastyId, getGeoLocationById } from './geoLocations';
+import type { Dynasty, Poem, HistoricalEvent, DynastySubPeriod, DynastyComparison, DailyChallenge, DailyChallengeItem, VirtualPoet, SocialPost, AudioTheater, Adventure, GeoLocation } from '@/types';
 
-export { dynasties, poems, events, subPeriods, comparisons, virtualPoets, socialPosts, audioTheaters, adventures };
+export { dynasties, poems, events, subPeriods, comparisons, virtualPoets, socialPosts, audioTheaters, adventures, geoLocations };
 export { getVirtualPoetById, getAllVirtualPoets, getVirtualPoetsByDynastyId, getSocialPostsByDynastyId, getSocialPostsByPoetId };
 export { getAllAudioTheaters, getAudioTheaterById, getAudioTheatersByDynastyId };
 export { getAllAdventures, getAdventureById, getAdventuresByDynastyId };
+export { getAllGeoLocations, getGeoLocationsByDynastyId, getGeoLocationById };
 
 export const getAllDynasties = (): Dynasty[] => {
   return dynasties.sort((a, b) => a.startYear - b.startYear);

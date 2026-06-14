@@ -4,7 +4,8 @@ import type {
   AppStore, UserProgress, QuizResult, Poem, DailyChallengeResult,
   VirtualPoet, SocialPost, ChatMessage, Puzzle, Poster, Almanac,
   NoteItem, WrongQuestion, PoemQuote, StudyGroup, PuzzlePiece,
-  AIImage, AudioTheaterProgress, AdventureProgress, AdventureScene
+  AIImage, AudioTheaterProgress, AdventureProgress, AdventureScene,
+  VoiceLearnCard, WrongQuestionGroup
 } from '@/types';
 import { 
   dynasties, poems, events, getPoemById, getAllDynasties, 
@@ -12,7 +13,8 @@ import {
   getPoemsBySubPeriodId, getPoemsByDifficulty, subPeriods,
   getAllSubPeriods, comparisons, generateDailyChallengeData,
   virtualPoets, socialPosts, getVirtualPoetById,
-  getAllAudioTheaters, getAudioTheaterById, getAllAdventures, getAdventureById
+  getAllAudioTheaters, getAudioTheaterById, getAllAdventures, getAdventureById,
+  getAllGeoLocations, getGeoLocationsByDynastyId
 } from '@/data';
 
 const initialUserProgress: UserProgress = {
@@ -124,6 +126,9 @@ export const useAppStore = create<AppStore>()(
       adventures: getAllAdventures(),
       currentAdventure: null,
       selectedAdventureId: null,
+      geoLocations: getAllGeoLocations(),
+      selectedMapLocationId: null,
+      voiceLearnSession: null,
 
       selectDynasty: (id: string | null) => {
         set({ selectedDynastyId: id });
@@ -923,6 +928,283 @@ export const useAppStore = create<AppStore>()(
       selectAdventure: (adventureId: string | null) => {
         set({ selectedAdventureId: adventureId });
       },
+
+      selectMapLocation: (locationId: string | null) => {
+        set({ selectedMapLocationId: locationId });
+      },
+
+      startVoiceLearnSession: (query: string) => {
+        const state = get();
+        const lowerQuery = query.toLowerCase();
+        const cards: VoiceLearnCard[] = [];
+
+        const matchedDynasty = state.dynasties.find(d =>
+          d.name.includes(query) || lowerQuery.includes(d.id)
+        );
+
+        if (matchedDynasty) {
+          const dynastyPoems = poems.filter(p => p.dynastyId === matchedDynasty.id);
+          const dynastyEvents = events.filter(e => e.dynastyId === matchedDynasty.id);
+
+          cards.push({
+            id: `vc-dynasty-${matchedDynasty.id}`,
+            type: 'dynasty',
+            dynastyId: matchedDynasty.id,
+            title: matchedDynasty.name,
+            content: matchedDynasty.description,
+            year: matchedDynasty.startYear,
+            audioText: `${matchedDynasty.name}，${matchedDynasty.description}`,
+          });
+
+          dynastyEvents.slice(0, 3).forEach(event => {
+            cards.push({
+              id: `vc-event-${event.id}`,
+              type: 'event',
+              dynastyId: matchedDynasty.id,
+              title: event.name,
+              content: event.description,
+              year: event.year,
+              audioText: `${event.name}，${event.description}。其影响是：${event.impact}`,
+            });
+          });
+
+          dynastyPoems.slice(0, 5).forEach(poem => {
+            cards.push({
+              id: `vc-poem-${poem.id}`,
+              type: 'poem',
+              dynastyId: matchedDynasty.id,
+              title: `《${poem.title}》— ${poem.author}`,
+              content: poem.famousLine,
+              famousLine: poem.famousLine,
+              audioText: `${poem.author}的《${poem.title}》，名句：${poem.famousLine}。背景：${poem.background}`,
+            });
+          });
+        } else {
+          const matchedPoems = state.poems.filter(p =>
+            p.title.includes(query) ||
+            p.author.includes(query) ||
+            p.famousLine.includes(query) ||
+            p.content.some(line => line.text.includes(query))
+          );
+
+          if (matchedPoems.length > 0) {
+            matchedPoems.slice(0, 8).forEach(poem => {
+              const dynasty = state.dynasties.find(d => d.id === poem.dynastyId);
+              cards.push({
+                id: `vc-poem-${poem.id}`,
+                type: 'poem',
+                dynastyId: poem.dynastyId,
+                title: `《${poem.title}》— ${poem.author}`,
+                content: poem.famousLine,
+                famousLine: poem.famousLine,
+                audioText: `${dynasty?.name || ''}诗人${poem.author}的《${poem.title}》，名句：${poem.famousLine}。${poem.background}`,
+              });
+            });
+          } else {
+            state.dynasties.forEach(dynasty => {
+              cards.push({
+                id: `vc-dynasty-${dynasty.id}`,
+                type: 'dynasty',
+                dynastyId: dynasty.id,
+                title: dynasty.name,
+                content: dynasty.description,
+                year: dynasty.startYear,
+                audioText: `${dynasty.name}，${dynasty.description}`,
+              });
+            });
+          }
+        }
+
+        const testQuestions = cards
+          .filter(c => c.type === 'poem' || c.type === 'event')
+          .slice(0, 5)
+          .map(c => c.id);
+
+        set({
+          voiceLearnSession: {
+            id: `vls-${Date.now()}`,
+            query,
+            cards,
+            currentCardIndex: 0,
+            isPlaying: false,
+            startedAt: Date.now(),
+            testStarted: false,
+            testQuestions,
+            testAnswers: {},
+          },
+        });
+      },
+
+      advanceVoiceCard: () => {
+        set((state) => {
+          if (!state.voiceLearnSession) return state;
+          const nextIndex = state.voiceLearnSession.currentCardIndex + 1;
+          if (nextIndex >= state.voiceLearnSession.cards.length) return state;
+          return {
+            voiceLearnSession: {
+              ...state.voiceLearnSession,
+              currentCardIndex: nextIndex,
+            },
+          };
+        });
+      },
+
+      toggleVoicePlayback: () => {
+        set((state) => {
+          if (!state.voiceLearnSession) return state;
+          return {
+            voiceLearnSession: {
+              ...state.voiceLearnSession,
+              isPlaying: !state.voiceLearnSession.isPlaying,
+            },
+          };
+        });
+      },
+
+      startVoiceTest: () => {
+        set((state) => {
+          if (!state.voiceLearnSession) return state;
+          return {
+            voiceLearnSession: {
+              ...state.voiceLearnSession,
+              testStarted: true,
+            },
+          };
+        });
+      },
+
+      answerVoiceTest: (questionId: string, answer: string) => {
+        set((state) => {
+          if (!state.voiceLearnSession) return state;
+          return {
+            voiceLearnSession: {
+              ...state.voiceLearnSession,
+              testAnswers: {
+                ...state.voiceLearnSession.testAnswers,
+                [questionId]: answer,
+              },
+            },
+          };
+        });
+      },
+
+      endVoiceLearnSession: () => {
+        set({ voiceLearnSession: null });
+      },
+
+      getWrongQuestionGroups: (): WrongQuestionGroup[] => {
+        const state = get();
+        const groups: Record<string, WrongQuestionGroup & { subPeriodGroups?: Record<string, { name: string; questions: typeof state.wrongQuestions }> }> = {};
+
+        state.wrongQuestions.forEach(q => {
+          if (!groups[q.dynastyId]) {
+            const dynasty = state.dynasties.find(d => d.id === q.dynastyId);
+            if (!dynasty) return;
+            const fmt = (y: number) => y < 0 ? `公元前${Math.abs(y)}年` : `公元${y}年`;
+            groups[q.dynastyId] = {
+              dynastyId: q.dynastyId,
+              dynastyName: dynasty.name,
+              dynastyColor: dynasty.color,
+              period: `${fmt(dynasty.startYear)} - ${fmt(dynasty.endYear)}`,
+              questions: [],
+              recommendedPoemIds: [],
+              subPeriodGroups: {},
+            };
+          }
+          groups[q.dynastyId].questions.push(q);
+
+          const poem = getPoemById(q.poemId);
+          if (poem?.subPeriodId && groups[q.dynastyId].subPeriodGroups) {
+            const subPeriod = subPeriods.find(sp => sp.id === poem.subPeriodId);
+            if (subPeriod) {
+              if (!groups[q.dynastyId].subPeriodGroups![poem.subPeriodId]) {
+                groups[q.dynastyId].subPeriodGroups![poem.subPeriodId] = {
+                  name: subPeriod.name,
+                  questions: [],
+                };
+              }
+              groups[q.dynastyId].subPeriodGroups![poem.subPeriodId].questions.push(q);
+            }
+          }
+        });
+
+        Object.keys(groups).forEach(dynastyId => {
+          const group = groups[dynastyId];
+          const wrongPoemIds = [...new Set(group.questions.map(q => q.poemId))];
+          const dynastyPoems = poems.filter(p => p.dynastyId === dynastyId);
+          const wrongPoemTags = wrongPoemIds
+            .map(pid => poems.find(p => p.id === pid))
+            .filter(Boolean)
+            .flatMap(p => p!.tags);
+          const wrongSubPeriodIds = [...new Set(
+            wrongPoemIds
+              .map(pid => poems.find(p => p.id === pid)?.subPeriodId)
+              .filter(Boolean)
+          )] as string[];
+          const wrongQuestionTypes = [...new Set(group.questions.map(q => {
+            const poem = getPoemById(q.poemId);
+            return poem?.difficulty || 'medium';
+          }))];
+
+          const scoredRecommendations = dynastyPoems
+            .filter(p => !wrongPoemIds.includes(p.id))
+            .map(p => {
+              let score = 0;
+              const matchingTags = p.tags.filter(t => wrongPoemTags.includes(t)).length;
+              score += matchingTags * 10;
+              if (wrongSubPeriodIds.includes(p.subPeriodId || '')) score += 15;
+              if (wrongQuestionTypes.includes(p.difficulty)) score += 8;
+              score += (state.userProgress.poemProgress[p.id]?.wrongCount || 0) * 5;
+              score -= (state.userProgress.poemProgress[p.id]?.correctCount || 0) * 2;
+              return { poem: p, score };
+            })
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 4);
+
+          const highlyRecommended = scoredRecommendations.filter(sr => sr.score > 0).map(sr => sr.poem.id);
+          const fallbackCount = 4 - highlyRecommended.length;
+          const fallback = dynastyPoems
+            .filter(p => !wrongPoemIds.includes(p.id) && !highlyRecommended.includes(p.id))
+            .slice(0, fallbackCount)
+            .map(p => p.id);
+
+          group.recommendedPoemIds = [...highlyRecommended, ...fallback];
+        });
+
+        return Object.values(groups).sort((a, b) => {
+          const dynastyA = state.dynasties.find(d => d.id === a.dynastyId);
+          const dynastyB = state.dynasties.find(d => d.id === b.dynastyId);
+          return (dynastyA?.startYear || 0) - (dynastyB?.startYear || 0);
+        });
+      },
+
+      getRecommendedPractice: (dynastyId: string): string[] => {
+        const state = get();
+        const dynastyWrongPoemIds = [...new Set(
+          state.wrongQuestions
+            .filter(q => q.dynastyId === dynastyId)
+            .map(q => q.poemId)
+        )];
+        const dynastyPoems = poems.filter(p => p.dynastyId === dynastyId);
+        const wrongTags = dynastyWrongPoemIds
+          .map(pid => poems.find(p => p.id === pid))
+          .filter(Boolean)
+          .flatMap(p => p!.tags);
+
+        return dynastyPoems
+          .filter(p => {
+            if (dynastyWrongPoemIds.includes(p.id)) return true;
+            return p.tags.some(t => wrongTags.includes(t));
+          })
+          .slice(0, 5)
+          .map(p => p.id);
+      },
+
+      removeWrongQuestion: (questionId: string) => {
+        set((state) => ({
+          wrongQuestions: state.wrongQuestions.filter(q => q.id !== questionId),
+        }));
+      },
     }),
     {
       name: 'shishi-zhixue-storage',
@@ -944,6 +1226,7 @@ export const useAppStore = create<AppStore>()(
         currentAdventure: state.currentAdventure,
         selectedAdventureId: state.selectedAdventureId,
         currentAudioTheaterId: state.currentAudioTheaterId,
+        selectedMapLocationId: state.selectedMapLocationId,
       }),
     }
   )

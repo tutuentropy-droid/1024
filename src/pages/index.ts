@@ -7,3 +7,6 @@ export { default as GroupPage } from './GroupPage';
 export { default as SocialPage } from './SocialPage';
 export { default as AudioTheaterPage } from './AudioTheaterPage';
 export { default as TimeMachinePage } from './TimeMachinePage';
+export { default as PoetryMapPage } from './PoetryMapPage';
+export { default as VoiceLearnPage } from './VoiceLearnPage';
+export { default as WrongBookPage } from './WrongBookPage';

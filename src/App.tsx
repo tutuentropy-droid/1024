@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Layout } from '@/components/layout';
-import { HomePage, TimelinePage, CardPage, QuizPage, ProgressPage, GroupPage, SocialPage, AudioTheaterPage, TimeMachinePage } from '@/pages';
+import { HomePage, TimelinePage, CardPage, QuizPage, ProgressPage, GroupPage, SocialPage, AudioTheaterPage, TimeMachinePage, PoetryMapPage, VoiceLearnPage, WrongBookPage } from '@/pages';
 import CrossDynastyComparison from '@/components/features/CrossDynastyComparison';
 import DailyChallenge from '@/components/features/DailyChallenge';
 
@@ -21,6 +21,9 @@ export default function App() {
           <Route path="/social" element={<SocialPage />} />
           <Route path="/theater" element={<AudioTheaterPage />} />
           <Route path="/timemachine" element={<TimeMachinePage />} />
+          <Route path="/poetrymap" element={<PoetryMapPage />} />
+          <Route path="/voicelearn" element={<VoiceLearnPage />} />
+          <Route path="/wrongbook" element={<WrongBookPage />} />
           <Route path="*" element={<HomePage />} />
         </Route>
       </Routes>

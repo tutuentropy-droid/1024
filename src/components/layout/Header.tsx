@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, History, ScrollText, Home, Trophy, GitCompare, Zap, Users, MessageCircle, Music, Clock } from 'lucide-react';
+import { BookOpen, History, ScrollText, Home, Trophy, GitCompare, Zap, Users, MessageCircle, Music, Clock, MapPin, Mic, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const Header = () => {
@@ -8,10 +8,13 @@ const Header = () => {
   const navItems = [
     { path: '/', label: '首页', icon: Home },
     { path: '/timeline', label: '时间轴', icon: History },
+    { path: '/poetrymap', label: '诗词地图', icon: MapPin },
     { path: '/theater', label: '有声剧场', icon: Music },
+    { path: '/voicelearn', label: '语音学习', icon: Mic },
     { path: '/timemachine', label: '时空穿梭', icon: Clock },
     { path: '/compare', label: '朝代对比', icon: GitCompare },
     { path: '/challenge', label: '每日挑战', icon: Zap },
+    { path: '/wrongbook', label: '错题本', icon: AlertTriangle },
     { path: '/group', label: '共学小组', icon: Users },
     { path: '/social', label: '文人圈', icon: MessageCircle },
     { path: '/progress', label: '仪表盘', icon: Trophy },

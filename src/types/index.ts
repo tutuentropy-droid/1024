@@ -402,12 +402,66 @@ export interface AdventureProgress {
   poemsUnlocked: string[];
 }
 
+export interface GeoLocation {
+  id: string;
+  name: string;
+  modernName: string;
+  x: number;
+  y: number;
+  dynastyId: string;
+  poemIds: string[];
+  eventIds: string[];
+  description: string;
+}
+
+export interface PoetryMapMarker {
+  locationId: string;
+  x: number;
+  y: number;
+  dynastyId: string;
+  label: string;
+  poemCount: number;
+}
+
+export interface VoiceLearnCard {
+  id: string;
+  type: 'dynasty' | 'poem' | 'event';
+  dynastyId: string;
+  title: string;
+  content: string;
+  famousLine?: string;
+  year?: number;
+  audioText: string;
+}
+
+export interface VoiceLearnSession {
+  id: string;
+  query: string;
+  cards: VoiceLearnCard[];
+  currentCardIndex: number;
+  isPlaying: boolean;
+  startedAt: number;
+  testStarted: boolean;
+  testQuestions: string[];
+  testAnswers: Record<string, string>;
+}
+
+export interface WrongQuestionGroup {
+  dynastyId: string;
+  dynastyName: string;
+  dynastyColor: string;
+  period: string;
+  questions: WrongQuestion[];
+  recommendedPoemIds: string[];
+}
+
 export interface AppState {
   dynasties: Dynasty[];
   poems: Poem[];
   events: HistoricalEvent[];
   subPeriods: DynastySubPeriod[];
   comparisons: DynastyComparison[];
+  geoLocations: GeoLocation[];
   userProgress: UserProgress;
   selectedDynastyId: string | null;
   selectedPoemId: string | null;
@@ -433,6 +487,8 @@ export interface AppState {
   adventures: Adventure[];
   currentAdventure: AdventureProgress | null;
   selectedAdventureId: string | null;
+  voiceLearnSession: VoiceLearnSession | null;
+  selectedMapLocationId: string | null;
 }
 
 export interface AppActions {
@@ -477,6 +533,16 @@ export interface AppActions {
   makeAdventureChoice: (sceneId: string, choiceId: string) => void;
   resetAdventure: () => void;
   selectAdventure: (adventureId: string | null) => void;
+  selectMapLocation: (locationId: string | null) => void;
+  startVoiceLearnSession: (query: string) => void;
+  advanceVoiceCard: () => void;
+  toggleVoicePlayback: () => void;
+  startVoiceTest: () => void;
+  answerVoiceTest: (questionId: string, answer: string) => void;
+  endVoiceLearnSession: () => void;
+  getWrongQuestionGroups: () => WrongQuestionGroup[];
+  getRecommendedPractice: (dynastyId: string) => string[];
+  removeWrongQuestion: (questionId: string) => void;
 }
 
 export type AppStore = AppState & AppActions;
