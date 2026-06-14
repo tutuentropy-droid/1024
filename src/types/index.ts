@@ -496,6 +496,14 @@ export interface AppState {
   isStudyBuddyOpen: boolean;
   dailyPoemHistory: DailyPoemHistory | null;
   dailyPoemHistoryList: DailyPoemHistory[];
+  creationWorkshopResults: CreationWorkshopResult[];
+  currentWorkshopTopicId: string | null;
+  racingGame: RacingGame | null;
+  racingHistory: RacingGame[];
+  achievements: Achievement[];
+  skins: Skin[];
+  backgroundMusics: BackgroundMusic[];
+  userAchievements: UserAchievements;
 }
 
 export interface AppActions {
@@ -562,6 +570,20 @@ export interface AppActions {
   markDailyPoemAsRead: (date: string) => void;
   toggleDailyPoemFavorite: (date: string) => void;
   getDailyPoemHistoryByDate: (date: string) => DailyPoemHistory | undefined;
+  selectWorkshopTopic: (topicId: string | null) => void;
+  submitCreationWorkshop: (topicId: string, essay: string) => CreationWorkshopResult;
+  getCreationWorkshopResults: () => CreationWorkshopResult[];
+  startRacingGame: (player2Name?: string) => void;
+  answerRacingQuestion: (dynastyId: string) => boolean;
+  endRacingGame: () => void;
+  getRacingHistory: () => RacingGame[];
+  checkAchievements: () => Achievement[];
+  unlockAchievement: (achievementId: string) => void;
+  setCurrentSkin: (skinId: string) => void;
+  setCurrentMusic: (musicId: string) => void;
+  getCurrentSkin: () => Skin | undefined;
+  getCurrentMusic: () => BackgroundMusic | undefined;
+  getUnlockedAchievements: () => Achievement[];
 }
 
 export interface TimeCapsule {
@@ -637,6 +659,141 @@ export interface AnimationScene {
   narration: string;
   duration: number;
   poemLine?: string;
+}
+
+export interface CreationWorkshopTopic {
+  id: string;
+  title: string;
+  description: string;
+  dynastyId: string;
+  relatedEventIds: string[];
+  relatedPoemIds: string[];
+  difficulty: 'easy' | 'medium' | 'hard';
+  sampleEssay: string;
+  keywords: string[];
+}
+
+export interface CreationWorkshopResult {
+  id: string;
+  topicId: string;
+  userEssay: string;
+  score: number;
+  historicalAccuracy: number;
+  poeticUsage: number;
+  creativity: number;
+  feedback: string[];
+  historicalIssues: HistoricalIssue[];
+  poeticAllusions: PoeticAllusion[];
+  createdAt: number;
+}
+
+export interface HistoricalIssue {
+  id: string;
+  type: 'error' | 'warning' | 'info';
+  description: string;
+  correctFact: string;
+  relatedEventId?: string;
+}
+
+export interface PoeticAllusion {
+  id: string;
+  poemId: string;
+  poemTitle: string;
+  author: string;
+  usedLine: string;
+  isCorrect: boolean;
+  explanation: string;
+}
+
+export interface RacingMatchItem {
+  id: string;
+  type: 'poem' | 'event';
+  content: string;
+  dynastyId: string;
+  dynastyName: string;
+  hint?: string;
+}
+
+export interface RacingPlayer {
+  id: string;
+  name: string;
+  avatar: string;
+  score: number;
+  currentRound: number;
+  correctAnswers: number;
+  totalTime: number;
+  isReady: boolean;
+}
+
+export interface RacingGame {
+  id: string;
+  status: 'waiting' | 'playing' | 'finished';
+  players: RacingPlayer[];
+  currentTurn: number;
+  items: RacingMatchItem[];
+  currentItemIndex: number;
+  roundStartTime: number;
+  totalRounds: number;
+  winnerId: string | null;
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: 'dynasty' | 'poem' | 'quiz' | 'social' | 'special';
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  requirement: {
+    type: 'poems_studied' | 'dynasty_completed' | 'quiz_accuracy' | 'streak_days' | 'total_score' | 'racing_wins';
+    target: number;
+    dynastyId?: string;
+  };
+  reward: {
+    type: 'skin' | 'music' | 'title';
+    id: string;
+  };
+  unlockedAt?: number;
+}
+
+export interface Skin {
+  id: string;
+  name: string;
+  description: string;
+  theme: {
+    primary: string;
+    secondary: string;
+    accent: string;
+    background: string;
+    cardBg: string;
+    text: string;
+  };
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  unlocked: boolean;
+  unlockedAt?: number;
+}
+
+export interface BackgroundMusic {
+  id: string;
+  name: string;
+  description: string;
+  composer?: string;
+  dynastyId?: string;
+  audioUrl: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  unlocked: boolean;
+  unlockedAt?: number;
+}
+
+export interface UserAchievements {
+  unlockedAchievements: string[];
+  unlockedSkins: string[];
+  unlockedMusics: string[];
+  currentSkinId: string;
+  currentMusicId: string;
+  totalPoints: number;
+  racingWins: number;
+  streakDays: number;
 }
 
 export type AppStore = AppState & AppActions;
