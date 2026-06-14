@@ -10,3 +10,5 @@ export { default as TimeMachinePage } from './TimeMachinePage';
 export { default as PoetryMapPage } from './PoetryMapPage';
 export { default as VoiceLearnPage } from './VoiceLearnPage';
 export { default as WrongBookPage } from './WrongBookPage';
+export { default as TimeCapsulePage } from './TimeCapsulePage';
+export { default as DailyPoemPage } from './DailyPoemPage';

@@ -5,7 +5,8 @@ import type {
   VirtualPoet, SocialPost, ChatMessage, Puzzle, Poster, Almanac,
   NoteItem, WrongQuestion, PoemQuote, StudyGroup, PuzzlePiece,
   AIImage, AudioTheaterProgress, AdventureProgress, AdventureScene,
-  VoiceLearnCard, WrongQuestionGroup
+  VoiceLearnCard, WrongQuestionGroup, TimeCapsule, StudyBuddy, 
+  StudyBuddyMessage, DailyPoemHistory, AnimationScene, HistoricalEvent
 } from '@/types';
 import { 
   dynasties, poems, events, getPoemById, getAllDynasties, 
@@ -14,7 +15,7 @@ import {
   getAllSubPeriods, comparisons, generateDailyChallengeData,
   virtualPoets, socialPosts, getVirtualPoetById,
   getAllAudioTheaters, getAudioTheaterById, getAllAdventures, getAdventureById,
-  getAllGeoLocations, getGeoLocationsByDynastyId
+  getAllGeoLocations, getGeoLocationsByDynastyId, getEventById
 } from '@/data';
 
 const initialUserProgress: UserProgress = {
@@ -45,6 +46,414 @@ const initialStudyGroup: StudyGroup = {
   currentPuzzleId: null,
   completedPuzzles: [],
   createdAt: Date.now(),
+};
+
+const initialStudyBuddy: StudyBuddy = {
+  id: 'buddy-1',
+  name: '小诗童',
+  avatar: '🧒',
+  personality: 'encouraging',
+  level: 1,
+  experience: 0,
+  totalQuestions: 0,
+  correctAnswers: 0,
+  currentStreak: 0,
+  longestStreak: 0,
+  unlockedBadges: ['初心者'],
+  lastInteraction: Date.now(),
+};
+
+const generateTimeCapsuleAnalysis = (
+  targetType: 'poet' | 'event',
+  target: VirtualPoet | HistoricalEvent | undefined,
+  userPrediction: string
+): { analysis: string; comparisonPoints: string[]; accuracy: number; creativity: number; tags: string[] } => {
+  if (!target) {
+    return {
+      analysis: '目标对象不存在。',
+      comparisonPoints: [],
+      accuracy: 0,
+      creativity: 0,
+      tags: [],
+    };
+  }
+
+  const lowerPrediction = userPrediction.toLowerCase();
+  const comparisonPoints: string[] = [];
+  let accuracyScore = 40;
+  let creativityScore = 50;
+  const tags: string[] = [];
+
+  if (targetType === 'poet') {
+    const poet = target as VirtualPoet;
+    const dynasty = dynasties.find(d => d.id === poet.dynastyId);
+
+    if (lowerPrediction.includes('手机') || lowerPrediction.includes('电话') || lowerPrediction.includes('互联网')) {
+      comparisonPoints.push(`若${poet.name}拥有现代通讯工具，其诗作可能会更加即时地反映社会动态，而非仅靠书信传递。`);
+      comparisonPoints.push(`历史上${poet.name}的诗作多是经过反复推敲而成，与现代即时通讯的快速表达风格迥异。`);
+      accuracyScore += 15;
+      creativityScore += 20;
+      tags.push('科技穿越', '通讯革命');
+    }
+
+    if (lowerPrediction.includes('安史之乱') || lowerPrediction.includes('战乱') || lowerPrediction.includes('战争')) {
+      comparisonPoints.push(`${poet.name}生活的时代确实经历过重大历史变故，其诗作中多有忧国忧民的情怀。`);
+      comparisonPoints.push(`历史上的${poet.name}以写实著称，其作品被誉为"诗史"，真实记录了时代变迁。`);
+      accuracyScore += 25;
+      creativityScore += 10;
+      tags.push('战乱题材', '诗史精神');
+    }
+
+    if (lowerPrediction.includes('社交') || lowerPrediction.includes('朋友圈') || lowerPrediction.includes('微博')) {
+      comparisonPoints.push(`古代文人通过诗文唱和进行社交，${poet.name}与当时许多名士都有诗作往来。`);
+      comparisonPoints.push(`若有现代社交媒体，${poet.name}的粉丝量想必十分可观，其每首新作都会引发热议。`);
+      accuracyScore += 10;
+      creativityScore += 25;
+      tags.push('文人社交', '传播影响');
+    }
+
+    if (lowerPrediction.includes('ai') || lowerPrediction.includes('人工智能') || lowerPrediction.includes('机器')) {
+      comparisonPoints.push(`${poet.name}的创作源于生活体验和情感积淀，这是人工智能难以复制的。`);
+      comparisonPoints.push(`AI可以模仿${poet.name}的风格，但无法替代其独特的人生经历和思想深度。`);
+      accuracyScore += 20;
+      creativityScore += 15;
+      tags.push('AI对比', '创作本质');
+    }
+
+    if (comparisonPoints.length === 0) {
+      comparisonPoints.push(`你的猜想很有想象力！${poet.name}作为${dynasty?.name || '那个'}时代的大诗人，${poet.personality.slice(0, 30)}。`);
+      comparisonPoints.push(`历史上${poet.name}以其独特的创作风格闻名，代表作品有${poet.famousWorks.slice(0, 2).join('、')}等。`);
+      comparisonPoints.push(`穿越时空的假设虽然有趣，但更重要的是理解诗人所处的历史背景和创作心境。`);
+      accuracyScore += 30;
+      creativityScore += 20;
+      tags.push('创意想象', '历史思考');
+    }
+  } else {
+    const event = target as HistoricalEvent;
+    const dynasty = dynasties.find(d => d.id === event.dynastyId);
+
+    if (lowerPrediction.includes('如果') || lowerPrediction.includes('假如') || lowerPrediction.includes('要是')) {
+      comparisonPoints.push(`历史没有如果，但${event.name}确实对${dynasty?.name || '当时'}的社会产生了深远影响。`);
+      comparisonPoints.push(`${event.description.slice(0, 50)}——这是${event.name}的真实历史面貌。`);
+      accuracyScore += 20;
+      creativityScore += 25;
+      tags.push('历史假设', '反事实思考');
+    }
+
+    if (lowerPrediction.includes('改变') || lowerPrediction.includes('阻止') || lowerPrediction.includes('避免')) {
+      comparisonPoints.push(`${event.name}的发生有其历史必然性，是多种社会矛盾积累的结果。`);
+      comparisonPoints.push(`该事件的影响：${event.impact.slice(0, 60)}`);
+      accuracyScore += 30;
+      creativityScore += 15;
+      tags.push('历史必然性', '影响分析');
+    }
+
+    if (lowerPrediction.includes('现代人') || lowerPrediction.includes('穿越') || lowerPrediction.includes('回到')) {
+      comparisonPoints.push(`现代人若身处${event.name}的时代，会面临巨大的文化冲击和生存挑战。`);
+      comparisonPoints.push(`理解历史事件需要放在具体的时代背景中，不能用现代标准简单评判。`);
+      accuracyScore += 25;
+      creativityScore += 30;
+      tags.push('时空穿越', '历史视角');
+    }
+
+    if (comparisonPoints.length === 0) {
+      comparisonPoints.push(`${event.name}发生于公元${event.year}年，是${dynasty?.name || '中国历史'}上的重要事件。`);
+      comparisonPoints.push(`事件背景：${event.description.slice(0, 80)}`);
+      comparisonPoints.push(`历史影响：${event.impact.slice(0, 80)}`);
+      accuracyScore += 35;
+      creativityScore += 20;
+      tags.push('历史事件', '深度分析');
+    }
+  }
+
+  if (userPrediction.length > 50) creativityScore += 10;
+  if (userPrediction.length > 100) creativityScore += 10;
+
+  accuracyScore = Math.min(95, Math.max(20, accuracyScore));
+  creativityScore = Math.min(98, Math.max(30, creativityScore));
+
+  const analysis = `
+【时空对照分析】
+
+你的猜想："${userPrediction.slice(0, 60)}${userPrediction.length > 60 ? '...' : ''}"
+
+历史真实与你的猜想对比：
+
+${comparisonPoints.map((point, i) => `${i + 1}. ${point}`).join('\n\n')}
+
+【评分】
+📊 历史契合度：${accuracyScore}分
+💡 创意指数：${creativityScore}分
+
+${accuracyScore >= 70 ? '你对历史有相当深入的了解！' : '继续学习，你的历史洞察力会越来越强！'}
+${creativityScore >= 70 ? '你的想象力非常丰富，很有创意思维！' : '不妨大胆想象，历史有无限可能。'}
+  `.trim();
+
+  return {
+    analysis,
+    comparisonPoints,
+    accuracy: accuracyScore,
+    creativity: creativityScore,
+    tags,
+  };
+};
+
+const generateStudyBuddyResponse = (
+  buddy: StudyBuddy,
+  userMessage: string,
+  userProgress: UserProgress,
+  difficulty: 'easy' | 'medium' | 'hard'
+): { message: string; type: StudyBuddyMessage['type']; difficulty?: 'easy' | 'medium' | 'hard'; relatedPoemId?: string } => {
+  const lowerMsg = userMessage.toLowerCase();
+
+  const personalityGreetings: Record<StudyBuddy['personality'], string[]> = {
+    encouraging: [
+      '你好呀！今天学习什么诗词呢？',
+      '欢迎回来！我们一起加油哦~',
+      '又见面啦！今天也要元气满满地学习！',
+    ],
+    challenging: [
+      '来了？准备好接受今天的挑战了吗？',
+      '今天想挑战什么难度的题目？',
+      '别偷懒，快开始今天的学习吧。',
+    ],
+    playful: [
+      '嘿嘿，又来学诗啦？',
+      '哇！你来啦！今天有好多有趣的诗词等着我们~',
+      '小诗童在此！我们来玩诗词游戏吧~',
+    ],
+    scholarly: [
+      '同学好，今日欲习何诗？',
+      '学而时习之，不亦说乎。',
+      '今日学习，可有疑难？',
+    ],
+  };
+
+  const personalityEncouragements: Record<StudyBuddy['personality'], string[]> = {
+    encouraging: [
+      '太棒了！你学得真快~',
+      '答对了！继续保持这个势头！',
+      '真厉害！我就知道你可以的！',
+      '进步神速，为你骄傲！',
+    ],
+    challenging: [
+      '嗯，还算不错。不过还可以更好。',
+      '答对了，但别骄傲，还有更难的。',
+      '基础还行，挑战一下更高难度？',
+      '不错的表现，但这只是开始。',
+    ],
+    playful: [
+      '耶！答对啦！🎉',
+      '哇塞，你好厉害！',
+      '嘻嘻，又答对了，好棒好棒~',
+      '厉害厉害，给你点个赞！👍',
+    ],
+    scholarly: [
+      '答得好，学有所得。',
+      '甚是不错，继续精进。',
+      '学有所成，可喜可贺。',
+      '此言有理，可见用心。',
+    ],
+  };
+
+  if (lowerMsg.includes('你好') || lowerMsg.includes('hi') || lowerMsg.includes('hello') || lowerMsg.includes('在吗')) {
+    const greetings = personalityGreetings[buddy.personality];
+    return {
+      message: greetings[Math.floor(Math.random() * greetings.length)],
+      type: 'greeting',
+    };
+  }
+
+  if (lowerMsg.includes('今天学什么') || lowerMsg.includes('推荐') || lowerMsg.includes('学什么')) {
+    const studiedCount = userProgress.totalPoemsStudied;
+    const totalCount = poems.length;
+    const progress = Math.round((studiedCount / totalCount) * 100);
+
+    let recommendation = '';
+    if (difficulty === 'easy') {
+      recommendation = '今天可以从简单的诗词开始，先复习一下之前学过的内容，再学一两首新诗~';
+    } else if (difficulty === 'medium') {
+      recommendation = '今天可以尝试中等难度的诗词，注意理解诗词的历史背景哦。';
+    } else {
+      recommendation = '今天来挑战一下高难度的诗词吧！深入分析诗词的艺术特色和历史意蕴。';
+    }
+
+    return {
+      message: `目前你已经学习了${studiedCount}首诗词，进度${progress}%。\n\n${recommendation}\n\n要不要我出几道题考考你？`,
+      type: 'summary',
+    };
+  }
+
+  if (lowerMsg.includes('出题') || lowerMsg.includes('考我') || lowerMsg.includes('问题')) {
+    const randomPoem = poems[Math.floor(Math.random() * poems.length)];
+    const questionTypes = [
+      `"${randomPoem.famousLine}"，这句诗出自谁的作品？`,
+      `${randomPoem.author}的《${randomPoem.title}》是哪个朝代的作品？`,
+      `《${randomPoem.title}》的作者是谁？`,
+    ];
+    const question = questionTypes[Math.floor(Math.random() * questionTypes.length)];
+
+    return {
+      message: `好呀，那我来考考你！\n\n${question}`,
+      type: 'question',
+      difficulty,
+      relatedPoemId: randomPoem.id,
+    };
+  }
+
+  if (lowerMsg.includes('太难了') || lowerMsg.includes('不会') || lowerMsg.includes('提示')) {
+    return {
+      message: '没关系，学习就是从不会到会的过程~ 我给你一点提示：想想这首诗的作者生活在哪个朝代，那个时候有什么著名的历史事件？',
+      type: 'hint',
+    };
+  }
+
+  if (lowerMsg.includes('谢谢') || lowerMsg.includes('感谢')) {
+    return {
+      message: personalityEncouragements[buddy.personality][0] + '\n\n不客气，我们一起进步！',
+      type: 'encouragement',
+    };
+  }
+
+  if (lowerMsg.includes('再见') || lowerMsg.includes('拜拜') || lowerMsg.includes('下次')) {
+    return {
+      message: '好的，下次见！记得每天都来学习哦~ 加油！💪',
+      type: 'encouragement',
+    };
+  }
+
+  const defaultResponses: Record<StudyBuddy['personality'], string[]> = {
+    encouraging: [
+      '嗯嗯，我明白你的意思。学习诗词需要慢慢来，我们一起努力！',
+      '你说得对！学习历史和诗词确实很有意思呢~',
+      '有什么不懂的尽管问我，我们一起探讨！',
+      '今天学习了这么多，辛苦啦！休息一下也很重要哦~',
+    ],
+    challenging: [
+      '嗯，思考得不错。但还可以更深入一些。',
+      '这个角度挺有意思。不过别忘了从历史背景去理解。',
+      '继续保持这种思考方式，你会进步很快的。',
+      '学而不思则罔，多思考总是好的。',
+    ],
+    playful: [
+      '哇，你说得好有道理！',
+      '嘿嘿，和你聊天真开心~',
+      '原来是这样呀！我又学到新知识了！',
+      '好棒好棒，继续继续~',
+    ],
+    scholarly: [
+      '此言有理，可与君共勉。',
+      '学无止境，当精益求精。',
+      '汝之所言，颇有见地。',
+      '善哉善哉，勤学如斯。',
+    ],
+  };
+
+  const responses = defaultResponses[buddy.personality];
+  return {
+    message: responses[Math.floor(Math.random() * responses.length)],
+    type: 'feedback',
+  };
+};
+
+const generateDailyPoemHistoryData = (): DailyPoemHistory => {
+  const today = new Date().toISOString().split('T')[0];
+  const seed = today.split('-').reduce((acc, v) => acc + parseInt(v), 0);
+  
+  const shuffledPoems = [...poems].sort((a, b) => {
+    const ha = (a.id + seed).split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    const hb = (b.id + seed).split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    return ha - hb;
+  });
+  
+  const selectedPoem = shuffledPoems[0];
+  const dynasty = dynasties.find(d => d.id === selectedPoem.dynastyId)!;
+  const poemContent = selectedPoem.content.map(l => l.text).join('\n');
+  
+  const insights = Object.values(selectedPoem.historicalInsight).filter(Boolean) as string[];
+  const mainInsight = insights[0] || selectedPoem.background;
+  
+  const animationScenes: AnimationScene[] = [
+    {
+      id: 'scene-1',
+      order: 1,
+      title: '时代背景',
+      description: `${dynasty.name}时期的社会风貌`,
+      visualPrompt: `古代${dynasty.name}朝繁华的城市景象，宫殿楼阁，文人雅士`,
+      narration: `${dynasty.name}是中国历史上${dynasty.description.slice(0, 30)}的朝代。在这样的时代背景下，诗词艺术达到了新的高峰。`,
+      duration: 30,
+    },
+    {
+      id: 'scene-2',
+      order: 2,
+      title: '诗人风采',
+      description: `${selectedPoem.author}的人生故事`,
+      visualPrompt: `古代诗人${selectedPoem.author}在山水间吟诗，身着古装，手持书卷`,
+      narration: `${selectedPoem.author}，${selectedPoem.authorBio.slice(0, 50)}。其诗作风格独特，对后世影响深远。`,
+      duration: 35,
+    },
+    {
+      id: 'scene-3',
+      order: 3,
+      title: '诗词意境',
+      description: `《${selectedPoem.title}》的诗意画面`,
+      visualPrompt: `${selectedPoem.famousLine}的诗意图，水墨画风格`,
+      narration: `《${selectedPoem.title}》是${selectedPoem.author}的代表作之一。"${selectedPoem.famousLine}"，这句诗意境深远，被后人广为传诵。`,
+      duration: 40,
+      poemLine: selectedPoem.famousLine,
+    },
+    {
+      id: 'scene-4',
+      order: 4,
+      title: '历史回响',
+      description: '诗词背后的历史深意',
+      visualPrompt: `历史长河中的诗词文化传承，时光流逝的意象`,
+      narration: `每一首诗词都是历史的见证。${mainInsight.slice(0, 60)}。以诗证史，以史解诗，让我们更好地理解中华文化的博大精深。`,
+      duration: 35,
+    },
+  ];
+
+  const keyPoints = [
+    `${selectedPoem.author}是${dynasty.name}时期的重要诗人`,
+    `《${selectedPoem.title}》创作于特定的历史背景下`,
+    `"${selectedPoem.famousLine}"是广为传诵的名句`,
+    `这首诗反映了当时的社会风貌和文人心态`,
+    `从历史角度解读诗词，能更深刻理解其内涵`,
+  ];
+
+  const quizOptions = [
+    selectedPoem.author,
+    ...virtualPoets
+      .filter(vp => vp.id !== selectedPoem.author)
+      .slice(0, 3)
+      .map(vp => vp.name),
+  ].sort(() => Math.random() - 0.5);
+
+  const correctAnswerIndex = quizOptions.indexOf(selectedPoem.author);
+
+  return {
+    date: today,
+    poemId: selectedPoem.id,
+    poemTitle: selectedPoem.title,
+    poemAuthor: selectedPoem.author,
+    poemContent,
+    dynastyName: dynasty.name,
+    dynastyId: dynasty.id,
+    historicalBackground: selectedPoem.background,
+    microLesson: {
+      title: `三分钟读懂《${selectedPoem.title}》`,
+      duration: 180,
+      summary: `通过动画微课，了解${dynasty.name}时期的历史背景，理解${selectedPoem.author}创作《${selectedPoem.title}》的时代语境，感受诗词与历史的交融。`,
+      keyPoints,
+      quizQuestion: `《${selectedPoem.title}》的作者是谁？`,
+      quizOptions,
+      correctAnswerIndex: correctAnswerIndex >= 0 ? correctAnswerIndex : 0,
+      explanation: `《${selectedPoem.title}》是${dynasty.name}诗人${selectedPoem.author}的代表作品。${selectedPoem.authorBio.slice(0, 40)}。`,
+    },
+    animationScenes,
+    isRead: false,
+    isFavorite: false,
+  };
 };
 
 const generateAIRResponse = (poet: VirtualPoet, userMessage: string): string => {
@@ -129,6 +538,13 @@ export const useAppStore = create<AppStore>()(
       geoLocations: getAllGeoLocations(),
       selectedMapLocationId: null,
       voiceLearnSession: null,
+      timeCapsules: [],
+      selectedTimeCapsuleId: null,
+      studyBuddy: initialStudyBuddy,
+      studyBuddyMessages: [],
+      isStudyBuddyOpen: false,
+      dailyPoemHistory: null,
+      dailyPoemHistoryList: [],
 
       selectDynasty: (id: string | null) => {
         set({ selectedDynastyId: id });
@@ -1205,6 +1621,223 @@ export const useAppStore = create<AppStore>()(
           wrongQuestions: state.wrongQuestions.filter(q => q.id !== questionId),
         }));
       },
+
+      createTimeCapsule: (targetType: 'poet' | 'event', targetId: string, userPrediction: string) => {
+        set((state) => {
+          let target: VirtualPoet | HistoricalEvent | undefined;
+          let targetName = '';
+          let dynastyId = '';
+
+          if (targetType === 'poet') {
+            target = getVirtualPoetById(targetId);
+            if (target) {
+              targetName = target.name;
+              dynastyId = target.dynastyId;
+            }
+          } else {
+            target = getEventById(targetId);
+            if (target) {
+              targetName = target.name;
+              dynastyId = target.dynastyId;
+            }
+          }
+
+          const { analysis, comparisonPoints, accuracy, creativity, tags } = generateTimeCapsuleAnalysis(
+            targetType,
+            target,
+            userPrediction
+          );
+
+          const newCapsule: TimeCapsule = {
+            id: `capsule-${Date.now()}`,
+            targetType,
+            targetId,
+            targetName,
+            userPrediction,
+            aiAnalysis: analysis,
+            comparisonPoints,
+            historicalAccuracy: accuracy,
+            creativityScore: creativity,
+            createdAt: Date.now(),
+            dynastyId,
+            tags,
+          };
+
+          return {
+            timeCapsules: [newCapsule, ...state.timeCapsules],
+            selectedTimeCapsuleId: newCapsule.id,
+          };
+        });
+      },
+
+      selectTimeCapsule: (id: string | null) => {
+        set({ selectedTimeCapsuleId: id });
+      },
+
+      deleteTimeCapsule: (id: string) => {
+        set((state) => ({
+          timeCapsules: state.timeCapsules.filter(c => c.id !== id),
+          selectedTimeCapsuleId: state.selectedTimeCapsuleId === id ? null : state.selectedTimeCapsuleId,
+        }));
+      },
+
+      getTimeCapsulesByDynasty: (dynastyId: string): TimeCapsule[] => {
+        const state = get();
+        return state.timeCapsules.filter(c => c.dynastyId === dynastyId);
+      },
+
+      toggleStudyBuddy: () => {
+        set((state) => {
+          const isOpen = !state.isStudyBuddyOpen;
+          if (isOpen && state.studyBuddyMessages.length === 0) {
+            const greeting: StudyBuddyMessage = {
+              id: `msg-${Date.now()}`,
+              content: '你好呀！我是小诗童，你的诗词学习伙伴~ 有什么想了解的吗？',
+              isUser: false,
+              timestamp: Date.now(),
+              type: 'greeting',
+            };
+            return {
+              isStudyBuddyOpen: isOpen,
+              studyBuddyMessages: [greeting],
+              studyBuddy: {
+                ...state.studyBuddy,
+                lastInteraction: Date.now(),
+              },
+            };
+          }
+          return { isStudyBuddyOpen: isOpen };
+        });
+      },
+
+      sendStudyBuddyMessage: (content: string) => {
+        set((state) => {
+          const userMessage: StudyBuddyMessage = {
+            id: `msg-${Date.now()}`,
+            content,
+            isUser: true,
+            timestamp: Date.now(),
+            type: 'feedback',
+          };
+
+          const difficulty = state.getStudyBuddyDifficulty();
+          const { message, type } = generateStudyBuddyResponse(
+            state.studyBuddy,
+            content,
+            state.userProgress,
+            difficulty
+          );
+
+          const buddyMessage: StudyBuddyMessage = {
+            id: `msg-${Date.now() + 1}`,
+            content: message,
+            isUser: false,
+            timestamp: Date.now(),
+            type,
+            difficulty,
+          };
+
+          const newMessages = [...state.studyBuddyMessages, userMessage, buddyMessage];
+
+          let newExp = state.studyBuddy.experience + 5;
+          let newLevel = state.studyBuddy.level;
+          const expForNextLevel = newLevel * 100;
+          if (newExp >= expForNextLevel) {
+            newLevel += 1;
+            newExp = newExp - expForNextLevel;
+          }
+
+          return {
+            studyBuddyMessages: newMessages,
+            studyBuddy: {
+              ...state.studyBuddy,
+              experience: newExp,
+              level: newLevel,
+              lastInteraction: Date.now(),
+            },
+          };
+        });
+      },
+
+      getStudyBuddyDifficulty: (): 'easy' | 'medium' | 'hard' => {
+        const state = get();
+        const accuracy = state.userProgress.averageAccuracy;
+        const totalQuizzes = state.userProgress.totalQuizzesTaken;
+        
+        if (totalQuizzes < 3) return 'easy';
+        if (accuracy >= 0.8) return 'hard';
+        if (accuracy >= 0.5) return 'medium';
+        return 'easy';
+      },
+
+      adjustStudyBuddyPersonality: () => {
+        set((state) => {
+          const accuracy = state.userProgress.averageAccuracy;
+          const totalPoems = state.userProgress.totalPoemsStudied;
+          
+          let personality: StudyBuddy['personality'] = 'encouraging';
+          if (totalPoems > 20 && accuracy > 0.7) {
+            personality = 'challenging';
+          } else if (totalPoems > 10) {
+            personality = 'playful';
+          } else if (accuracy > 0.8) {
+            personality = 'scholarly';
+          }
+
+          return {
+            studyBuddy: {
+              ...state.studyBuddy,
+              personality,
+            },
+          };
+        });
+      },
+
+      generateDailyPoemHistory: () => {
+        set((state) => {
+          const today = new Date().toISOString().split('T')[0];
+          const existing = state.dailyPoemHistoryList.find(d => d.date === today);
+          
+          if (existing) {
+            return {
+              dailyPoemHistory: existing,
+            };
+          }
+
+          const newDaily = generateDailyPoemHistoryData();
+          return {
+            dailyPoemHistory: newDaily,
+            dailyPoemHistoryList: [newDaily, ...state.dailyPoemHistoryList].slice(0, 30),
+          };
+        });
+      },
+
+      markDailyPoemAsRead: (date: string) => {
+        set((state) => ({
+          dailyPoemHistoryList: state.dailyPoemHistoryList.map(d =>
+            d.date === date ? { ...d, isRead: true } : d
+          ),
+          dailyPoemHistory: state.dailyPoemHistory?.date === date
+            ? { ...state.dailyPoemHistory, isRead: true }
+            : state.dailyPoemHistory,
+        }));
+      },
+
+      toggleDailyPoemFavorite: (date: string) => {
+        set((state) => ({
+          dailyPoemHistoryList: state.dailyPoemHistoryList.map(d =>
+            d.date === date ? { ...d, isFavorite: !d.isFavorite } : d
+          ),
+          dailyPoemHistory: state.dailyPoemHistory?.date === date
+            ? { ...state.dailyPoemHistory, isFavorite: !state.dailyPoemHistory.isFavorite }
+            : state.dailyPoemHistory,
+        }));
+      },
+
+      getDailyPoemHistoryByDate: (date: string): DailyPoemHistory | undefined => {
+        const state = get();
+        return state.dailyPoemHistoryList.find(d => d.date === date);
+      },
     }),
     {
       name: 'shishi-zhixue-storage',
@@ -1227,6 +1860,10 @@ export const useAppStore = create<AppStore>()(
         selectedAdventureId: state.selectedAdventureId,
         currentAudioTheaterId: state.currentAudioTheaterId,
         selectedMapLocationId: state.selectedMapLocationId,
+        timeCapsules: state.timeCapsules,
+        studyBuddy: state.studyBuddy,
+        studyBuddyMessages: state.studyBuddyMessages,
+        dailyPoemHistoryList: state.dailyPoemHistoryList,
       }),
     }
   )

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { History, BookOpen, Brain, Award, ChevronRight, ScrollText, Sparkles, GitCompare, Zap, Users, MessageCircle, Puzzle, Image, FileText, Music, Clock } from 'lucide-react';
+import { History, BookOpen, Brain, Award, ChevronRight, ScrollText, Sparkles, GitCompare, Zap, Users, MessageCircle, Image, FileText, Music, Clock, Hourglass, Sun } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { getAllPoems } from '@/data';
 import { cn } from '@/lib/utils';
@@ -107,6 +107,26 @@ const HomePage = () => {
       color: 'from-cinnabar-300 to-gold-300',
       bgColor: 'bg-gold-50',
       textColor: 'text-gold-300',
+    },
+    {
+      icon: Sun,
+      title: '每日一诗',
+      description: '每天推送一首经典诗词，附带3分钟微课动画摘要，轻松积累诗词知识。',
+      path: '/dailypoem',
+      color: 'from-rose-400 to-orange-400',
+      bgColor: 'bg-rose-50',
+      textColor: 'text-rose-400',
+      highlight: true,
+    },
+    {
+      icon: Hourglass,
+      title: '时间胶囊',
+      description: '对历史人物或事件写下预测式评论，AI生成时空对照分析，激发创意思维。',
+      path: '/timecapsule',
+      color: 'from-violet-500 to-purple-600',
+      bgColor: 'bg-violet-50',
+      textColor: 'text-violet-500',
+      highlight: true,
     },
     {
       icon: FileText,

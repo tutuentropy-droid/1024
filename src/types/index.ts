@@ -489,6 +489,13 @@ export interface AppState {
   selectedAdventureId: string | null;
   voiceLearnSession: VoiceLearnSession | null;
   selectedMapLocationId: string | null;
+  timeCapsules: TimeCapsule[];
+  selectedTimeCapsuleId: string | null;
+  studyBuddy: StudyBuddy;
+  studyBuddyMessages: StudyBuddyMessage[];
+  isStudyBuddyOpen: boolean;
+  dailyPoemHistory: DailyPoemHistory | null;
+  dailyPoemHistoryList: DailyPoemHistory[];
 }
 
 export interface AppActions {
@@ -543,6 +550,93 @@ export interface AppActions {
   getWrongQuestionGroups: () => WrongQuestionGroup[];
   getRecommendedPractice: (dynastyId: string) => string[];
   removeWrongQuestion: (questionId: string) => void;
+  createTimeCapsule: (targetType: 'poet' | 'event', targetId: string, userPrediction: string) => void;
+  selectTimeCapsule: (id: string | null) => void;
+  deleteTimeCapsule: (id: string) => void;
+  getTimeCapsulesByDynasty: (dynastyId: string) => TimeCapsule[];
+  toggleStudyBuddy: () => void;
+  sendStudyBuddyMessage: (content: string) => void;
+  getStudyBuddyDifficulty: () => 'easy' | 'medium' | 'hard';
+  adjustStudyBuddyPersonality: () => void;
+  generateDailyPoemHistory: () => void;
+  markDailyPoemAsRead: (date: string) => void;
+  toggleDailyPoemFavorite: (date: string) => void;
+  getDailyPoemHistoryByDate: (date: string) => DailyPoemHistory | undefined;
+}
+
+export interface TimeCapsule {
+  id: string;
+  targetType: 'poet' | 'event';
+  targetId: string;
+  targetName: string;
+  userPrediction: string;
+  aiAnalysis: string;
+  comparisonPoints: string[];
+  historicalAccuracy: number;
+  creativityScore: number;
+  createdAt: number;
+  dynastyId: string;
+  tags: string[];
+}
+
+export interface StudyBuddy {
+  id: string;
+  name: string;
+  avatar: string;
+  personality: 'encouraging' | 'challenging' | 'playful' | 'scholarly';
+  level: number;
+  experience: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  currentStreak: number;
+  longestStreak: number;
+  unlockedBadges: string[];
+  lastInteraction: number;
+}
+
+export interface StudyBuddyMessage {
+  id: string;
+  content: string;
+  isUser: boolean;
+  timestamp: number;
+  type: 'greeting' | 'question' | 'hint' | 'encouragement' | 'summary' | 'feedback';
+  difficulty?: 'easy' | 'medium' | 'hard';
+  relatedPoemId?: string;
+}
+
+export interface DailyPoemHistory {
+  date: string;
+  poemId: string;
+  poemTitle: string;
+  poemAuthor: string;
+  poemContent: string;
+  dynastyName: string;
+  dynastyId: string;
+  historicalBackground: string;
+  microLesson: {
+    title: string;
+    duration: number;
+    summary: string;
+    keyPoints: string[];
+    quizQuestion: string;
+    quizOptions: string[];
+    correctAnswerIndex: number;
+    explanation: string;
+  };
+  animationScenes: AnimationScene[];
+  isRead: boolean;
+  isFavorite: boolean;
+}
+
+export interface AnimationScene {
+  id: string;
+  order: number;
+  title: string;
+  description: string;
+  visualPrompt: string;
+  narration: string;
+  duration: number;
+  poemLine?: string;
 }
 
 export type AppStore = AppState & AppActions;

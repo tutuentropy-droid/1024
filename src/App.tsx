@@ -1,8 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Layout } from '@/components/layout';
-import { HomePage, TimelinePage, CardPage, QuizPage, ProgressPage, GroupPage, SocialPage, AudioTheaterPage, TimeMachinePage, PoetryMapPage, VoiceLearnPage, WrongBookPage } from '@/pages';
+import { HomePage, TimelinePage, CardPage, QuizPage, ProgressPage, GroupPage, SocialPage, AudioTheaterPage, TimeMachinePage, PoetryMapPage, VoiceLearnPage, WrongBookPage, TimeCapsulePage, DailyPoemPage } from '@/pages';
 import CrossDynastyComparison from '@/components/features/CrossDynastyComparison';
 import DailyChallenge from '@/components/features/DailyChallenge';
+import StudyBuddy from '@/components/features/StudyBuddy';
 
 export default function App() {
   return (
@@ -24,9 +25,12 @@ export default function App() {
           <Route path="/poetrymap" element={<PoetryMapPage />} />
           <Route path="/voicelearn" element={<VoiceLearnPage />} />
           <Route path="/wrongbook" element={<WrongBookPage />} />
+          <Route path="/timecapsule" element={<TimeCapsulePage />} />
+          <Route path="/dailypoem" element={<DailyPoemPage />} />
           <Route path="*" element={<HomePage />} />
         </Route>
       </Routes>
+      <StudyBuddy />
     </Router>
   );
 }
