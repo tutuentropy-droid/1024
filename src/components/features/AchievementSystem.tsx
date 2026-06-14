@@ -1,161 +1,217 @@
 import { useState } from 'react';
-import { Trophy, Palette, Music, Lock, Check, Star, Sparkles, Crown, Flame } from 'lucide-react';
-import { useAppStore } from '@/store';
+import { Award, Trophy, Palette, Music, Crown, Lock, Check, Star, Sparkles, Target, BookOpen, Zap, PenTool, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Achievement, Skin, BackgroundMusic } from '@/types';
+import { useAppStore } from '@/store';
+import type { Achievement, Skin, BGM } from '@/types';
 
 const AchievementSystem = () => {
-  const { 
-    achievements, 
-    skins, 
-    backgroundMusics, 
-    userAchievements,
-    setCurrentSkin,
-    setCurrentMusic,
-    checkAchievements
-  } = useAppStore();
-  
-  const [activeTab, setActiveTab] = useState<'achievements' | 'skins' | 'music'>('achievements');
+  const { achievements, skins, bgms, userAchievements, setCurrentSkin, setCurrentBgm, setCurrentTitle } = useAppStore();
+  const [activeTab, setActiveTab] = useState<'achievements' | 'skins' | 'bgms' | 'titles'>('achievements');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  const rarityColors: Record<string, { bg: string; text: string; border: string }> = {
-    common: { bg: 'bg-gray-100', text: 'text-gray-500', border: 'border-gray-200' },
-    rare: { bg: 'bg-blue-100', text: 'text-blue-500', border: 'border-blue-200' },
-    epic: { bg: 'bg-purple-100', text: 'text-purple-500', border: 'border-purple-200' },
-    legendary: { bg: 'bg-gold-50', text: 'text-gold-300', border: 'border-gold-200' },
+  const categories = [
+    { id: 'all', name: '全部', icon: Star },
+    { id: 'dynasty', name: '朝代', icon: Crown },
+    { id: 'poem', name: '诗词', icon: BookOpen },
+    { id: 'quiz', name: '答题', icon: Target },
+    { id: 'creation', name: '创作', icon: PenTool },
+    { id: 'race', name: '竞速', icon: Zap },
+    { id: 'special', name: '特殊', icon: Sparkles },
+  ];
+
+  const filteredAchievements = selectedCategory === 'all'
+    ? achievements
+    : achievements.filter(a => a.category === selectedCategory);
+
+  const getRarityColor = (rarity: string) => {
+    switch (rarity) {
+      case 'common': return 'text-ink-200 bg-paper-100 border-paper-200';
+      case 'rare': return 'text-cobalt-300 bg-cobalt-50 border-cobalt-200';
+      case 'epic': return 'text-purple-500 bg-purple-50 border-purple-200';
+      case 'legendary': return 'text-gold-300 bg-gold-50 border-gold-200';
+      default: return 'text-ink-200 bg-paper-100 border-paper-200';
+    }
   };
 
-  const rarityLabels: Record<string, string> = {
-    common: '普通',
-    rare: '稀有',
-    epic: '史诗',
-    legendary: '传说',
+  const getRarityText = (rarity: string) => {
+    switch (rarity) {
+      case 'common': return '普通';
+      case 'rare': return '稀有';
+      case 'epic': return '史诗';
+      case 'legendary': return '传说';
+      default: return rarity;
+    }
   };
 
-  const categoryLabels: Record<string, string> = {
-    dynasty: '朝代',
-    poem: '诗词',
-    quiz: '测试',
-    social: '社交',
-    special: '特殊',
+  const getRarityGradient = (rarity: string) => {
+    switch (rarity) {
+      case 'common': return 'from-gray-400 to-gray-500';
+      case 'rare': return 'from-blue-400 to-cobalt-500';
+      case 'epic': return 'from-purple-400 to-pink-500';
+      case 'legendary': return 'from-gold-300 to-orange-400';
+      default: return 'from-gray-400 to-gray-500';
+    }
   };
 
-  const unlockedCount = userAchievements.unlockedAchievements.length;
+  const isUnlocked = (achievementId: string) => {
+    return userAchievements.unlockedAchievementIds.includes(achievementId);
+  };
+
+  const unlockedCount = userAchievements.unlockedAchievementIds.length;
   const totalCount = achievements.length;
-  const progressPercent = totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0;
+  const progressPercent = (unlockedCount / totalCount) * 100;
 
-  const isAchievementUnlocked = (achievementId: string) => 
-    userAchievements.unlockedAchievements.includes(achievementId);
-
-  const isSkinUnlocked = (skinId: string) => 
-    userAchievements.unlockedSkins.includes(skinId);
-
-  const isMusicUnlocked = (musicId: string) => 
-    userAchievements.unlockedMusics.includes(musicId);
-
-  const handleCheckAchievements = () => {
-    checkAchievements();
-  };
-
-  const renderAchievements = () => {
-    const categories = ['dynasty', 'poem', 'quiz', 'special'] as const;
-    
-    return (
-      <div className="space-y-8">
-        <div className="card bg-gradient-to-r from-gold-50 to-purple-50">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-sm text-ink-200 mb-1">成就进度</div>
-              <div className="text-2xl font-bold text-ink-400">
-                {unlockedCount} / {totalCount}
-              </div>
+  return (
+    <div className="min-h-screen py-8">
+      <div className="container mx-auto px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8 animate-fade-in-up">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gold-50 text-gold-300 rounded-full text-sm mb-6">
+              <Trophy className="w-4 h-4" />
+              成就系统
             </div>
-            <div className="text-4xl">
-              {unlockedCount >= totalCount ? '🏆' : unlockedCount >= totalCount * 0.5 ? '⭐' : '🎯'}
-            </div>
+            <h1 className="title-display text-4xl text-ink-400 mb-4">
+              我的成就
+            </h1>
+            <p className="text-ink-200 max-w-lg mx-auto">
+              完成学习目标，解锁成就，获得专属皮肤和背景音乐
+            </p>
           </div>
-          <div className="h-3 bg-paper-200 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-gold-300 to-purple-500 rounded-full transition-all duration-500"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-          <button
-            onClick={handleCheckAchievements}
-            className="mt-4 text-sm text-purple-500 hover:text-purple-600 font-medium"
-          >
-            检查成就 →
-          </button>
-        </div>
 
-        {categories.map(category => {
-          const categoryAchievements = achievements.filter(a => a.category === category);
-          const unlockedInCategory = categoryAchievements.filter(a => isAchievementUnlocked(a.id)).length;
-          
-          if (categoryAchievements.length === 0) return null;
-
-          return (
-            <div key={category}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="title-display text-lg text-ink-400">
-                  {categoryLabels[category]}成就
+          <div className="card mb-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="title-display text-lg text-ink-400 mb-1">
+                  成就进度
                 </h3>
-                <span className="text-sm text-ink-100">
-                  {unlockedInCategory}/{categoryAchievements.length}
-                </span>
+                <p className="text-sm text-ink-200">
+                  已解锁 {unlockedCount} / {totalCount} 个成就
+                </p>
               </div>
-              
+              <div className="text-right">
+                <p className="text-3xl font-bold text-gold-300">
+                  {Math.round(progressPercent)}%
+                </p>
+              </div>
+            </div>
+            <div className="h-3 bg-paper-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-gold-300 to-orange-400 transition-all duration-500"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2 mb-6 overflow-x-auto pb-2 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+            {[
+              { id: 'achievements', name: '成就', icon: Award },
+              { id: 'skins', name: '皮肤', icon: Palette },
+              { id: 'bgms', name: '音乐', icon: Music },
+              { id: 'titles', name: '称号', icon: Crown },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                  className={cn(
+                    'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+                    activeTab === tab.id
+                      ? 'bg-gold-100 text-gold-500'
+                      : 'text-ink-200 hover:bg-paper-100'
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  {tab.name}
+                </button>
+              );
+            })}
+          </div>
+
+          {activeTab === 'achievements' && (
+            <>
+              <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+                {categories.map((cat) => {
+                  const Icon = cat.icon;
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategory(cat.id)}
+                      className={cn(
+                        'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
+                        selectedCategory === cat.id
+                          ? 'bg-purple-100 text-purple-600'
+                          : 'text-ink-200 hover:bg-paper-100'
+                      )}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {cat.name}
+                    </button>
+                  );
+                })}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {categoryAchievements.map(achievement => {
-                  const unlocked = isAchievementUnlocked(achievement.id);
-                  const colors = rarityColors[achievement.rarity];
-                  
+                {filteredAchievements.map((achievement, index) => {
+                  const unlocked = isUnlocked(achievement.id);
                   return (
                     <div
                       key={achievement.id}
                       className={cn(
-                        'card relative overflow-hidden transition-all',
-                        unlocked ? 'opacity-100' : 'opacity-60'
+                        'card transition-all duration-300 animate-fade-in-up',
+                        !unlocked && 'opacity-60'
                       )}
+                      style={{ animationDelay: `${index * 50}ms` }}
                     >
-                      <div className={cn(
-                        'absolute top-0 right-0 w-16 h-16 -translate-y-8 translate-x-8 rounded-full',
-                        colors.bg
-                      )} />
-                      
-                      <div className="relative flex items-start gap-4">
+                      <div className="flex items-start gap-4">
                         <div className={cn(
-                          'w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0',
-                          unlocked ? colors.bg : 'bg-gray-100'
+                          'w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 text-2xl',
+                          unlocked
+                            ? `bg-gradient-to-br ${getRarityGradient(achievement.rarity)}`
+                            : 'bg-paper-200'
                         )}>
                           {unlocked ? (
-                            achievement.icon
+                            <span>{achievement.icon}</span>
                           ) : (
-                            <Lock className="w-6 h-6 text-gray-400" />
+                            <Lock className="w-6 h-6 text-ink-100" />
                           )}
                         </div>
-                        
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium text-ink-400">
+                          <div className="flex items-start justify-between mb-1">
+                            <h3 className={cn(
+                              'title-display text-lg',
+                              unlocked ? 'text-ink-400' : 'text-ink-200'
+                            )}>
                               {achievement.name}
-                            </h4>
-                            {unlocked && (
-                              <Check className="w-4 h-4 text-jade-300" />
-                            )}
+                            </h3>
+                            <span className={cn(
+                              'text-xs px-2 py-0.5 rounded-full border flex-shrink-0 ml-2',
+                              getRarityColor(achievement.rarity)
+                            )}>
+                              {getRarityText(achievement.rarity)}
+                            </span>
                           </div>
                           <p className="text-sm text-ink-200 mb-2">
                             {achievement.description}
                           </p>
-                          <div className="flex items-center gap-3">
-                            <span className={cn(
-                              'text-xs px-2 py-0.5 rounded-full',
-                              colors.bg, colors.text
-                            )}>
-                              {rarityLabels[achievement.rarity]}
-                            </span>
-                            {unlocked && achievement.reward && (
-                              <span className="text-xs text-ink-100">
-                                奖励：{achievement.reward.type === 'skin' ? '皮肤' : achievement.reward.type === 'music' ? '音乐' : '称号'}
+                          <div className="flex items-center gap-2 text-xs text-ink-100">
+                            <span>奖励：</span>
+                            {achievement.rewardType === 'skin' && (
+                              <span className="flex items-center gap-1">
+                                <Palette className="w-3 h-3" />
+                                专属皮肤
+                              </span>
+                            )}
+                            {achievement.rewardType === 'bgm' && (
+                              <span className="flex items-center gap-1">
+                                <Music className="w-3 h-3" />
+                                背景音乐
+                              </span>
+                            )}
+                            {achievement.rewardType === 'title' && (
+                              <span className="flex items-center gap-1">
+                                <Crown className="w-3 h-3" />
+                                专属称号
                               </span>
                             )}
                           </div>
@@ -165,256 +221,187 @@ const AchievementSystem = () => {
                   );
                 })}
               </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
+            </>
+          )}
 
-  const renderSkins = () => (
-    <div className="space-y-6">
-      <div className="card bg-gradient-to-r from-purple-50 to-pink-50">
-        <div className="flex items-center gap-3">
-          <Palette className="w-8 h-8 text-purple-500" />
-          <div>
-            <div className="font-medium text-ink-400">皮肤系统</div>
-            <div className="text-sm text-ink-200">
-              已解锁 {userAchievements.unlockedSkins.length} / {skins.length} 款皮肤
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {skins.map(skin => {
-          const unlocked = isSkinUnlocked(skin.id);
-          const isCurrent = userAchievements.currentSkinId === skin.id;
-          const colors = rarityColors[skin.rarity];
-          
-          return (
-            <div
-              key={skin.id}
-              className={cn(
-                'card relative overflow-hidden transition-all',
-                !unlocked && 'opacity-60',
-                isCurrent && 'ring-2 ring-purple-400'
-              )}
-            >
-              <div 
-                className="h-20 rounded-lg mb-4"
-                style={{ 
-                  background: `linear-gradient(135deg, ${skin.theme.primary}, ${skin.theme.accent})` 
-                }}
-              />
-              
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h4 className="font-medium text-ink-400 flex items-center gap-2">
-                    {skin.name}
-                    {isCurrent && (
-                      <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-500 rounded-full">
-                        使用中
-                      </span>
-                    )}
-                  </h4>
-                  <p className="text-sm text-ink-200 mt-1">
-                    {skin.description}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className={cn(
-                  'text-xs px-2 py-0.5 rounded-full',
-                  colors.bg, colors.text
-                )}>
-                  {rarityLabels[skin.rarity]}
-                </span>
-                
-                {unlocked ? (
-                  <button
-                    onClick={() => setCurrentSkin(skin.id)}
-                    disabled={isCurrent}
+          {activeTab === 'skins' && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {skins.map((skin, index) => {
+                const unlocked = userAchievements.unlockedSkinIds.includes(skin.id);
+                const isCurrent = userAchievements.currentSkinId === skin.id;
+                return (
+                  <div
+                    key={skin.id}
                     className={cn(
-                      'text-sm px-3 py-1 rounded-lg transition-all',
-                      isCurrent 
-                        ? 'bg-paper-100 text-ink-100 cursor-default' 
-                        : 'bg-purple-100 text-purple-500 hover:bg-purple-200'
+                      'card transition-all duration-300 animate-fade-in-up',
+                      isCurrent && 'ring-2 ring-gold-300',
+                      !unlocked && 'opacity-50'
                     )}
+                    style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    {isCurrent ? '已使用' : '使用'}
-                  </button>
-                ) : (
-                  <span className="text-xs text-ink-100 flex items-center gap-1">
-                    <Lock className="w-3 h-3" />
-                    未解锁
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  const renderMusic = () => (
-    <div className="space-y-6">
-      <div className="card bg-gradient-to-r from-blue-50 to-cyan-50">
-        <div className="flex items-center gap-3">
-          <Music className="w-8 h-8 text-blue-500" />
-          <div>
-            <div className="font-medium text-ink-400">背景音乐</div>
-            <div className="text-sm text-ink-200">
-              已解锁 {userAchievements.unlockedMusics.length} / {backgroundMusics.length} 首音乐
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        {backgroundMusics.map(music => {
-          const unlocked = isMusicUnlocked(music.id);
-          const isCurrent = userAchievements.currentMusicId === music.id;
-          const colors = rarityColors[music.rarity];
-          
-          return (
-            <div
-              key={music.id}
-              className={cn(
-                'card flex items-center gap-4 transition-all',
-                !unlocked && 'opacity-60',
-                isCurrent && 'ring-2 ring-blue-400'
-              )}
-            >
-              <div className={cn(
-                'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0',
-                isCurrent ? 'bg-blue-100' : 'bg-paper-100'
-              )}>
-                {isCurrent ? (
-                  <div className="flex items-end gap-0.5 h-5">
-                    <div className="w-1 bg-blue-400 rounded-full animate-pulse" style={{ height: '60%' }} />
-                    <div className="w-1 bg-blue-400 rounded-full animate-pulse" style={{ height: '100%', animationDelay: '0.1s' }} />
-                    <div className="w-1 bg-blue-400 rounded-full animate-pulse" style={{ height: '40%', animationDelay: '0.2s' }} />
-                    <div className="w-1 bg-blue-400 rounded-full animate-pulse" style={{ height: '80%', animationDelay: '0.3s' }} />
+                    <div
+                      className="h-24 rounded-xl mb-4"
+                      style={{
+                        backgroundColor: skin.theme.backgroundColor,
+                        backgroundImage: `linear-gradient(135deg, ${skin.theme.primaryColor}20, ${skin.theme.secondaryColor}20)`,
+                      }}
+                    >
+                      <div className="h-full flex items-center justify-center">
+                        <div
+                          className="w-12 h-12 rounded-full"
+                          style={{ backgroundColor: skin.theme.primaryColor }}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h3 className="title-display text-base text-ink-400">
+                          {skin.name}
+                        </h3>
+                        <span className={cn(
+                          'text-xs px-1.5 py-0.5 rounded',
+                          getRarityColor(skin.rarity)
+                        )}>
+                          {getRarityText(skin.rarity)}
+                        </span>
+                      </div>
+                      {isCurrent && (
+                        <Check className="w-5 h-5 text-gold-300" />
+                      )}
+                    </div>
+                    <p className="text-xs text-ink-200 mb-3">
+                      {skin.description}
+                    </p>
+                    {unlocked && !isCurrent && (
+                      <button
+                        onClick={() => setCurrentSkin(skin.id)}
+                        className="w-full py-2 text-sm bg-paper-100 text-ink-300 rounded-lg hover:bg-paper-200 transition-colors"
+                      >
+                        使用
+                      </button>
+                    )}
+                    {!unlocked && (
+                      <div className="flex items-center justify-center gap-1 text-xs text-ink-100 py-2">
+                        <Lock className="w-3 h-3" />
+                        未解锁
+                      </div>
+                    )}
+                    {isCurrent && (
+                      <div className="text-center text-xs text-gold-300 py-2">
+                        使用中
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <Music className={cn('w-5 h-5', unlocked ? 'text-blue-400' : 'text-gray-300')} />
-                )}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-medium text-ink-400">
-                    {music.name}
-                  </h4>
-                  <span className={cn(
-                    'text-xs px-1.5 py-0.5 rounded',
-                    colors.bg, colors.text
-                  )}>
-                    {rarityLabels[music.rarity]}
-                  </span>
-                </div>
-                <p className="text-sm text-ink-200 mt-0.5">
-                  {music.description}
-                </p>
-                {music.composer && (
-                  <p className="text-xs text-ink-100 mt-1">
-                    {music.composer}
-                  </p>
-                )}
-              </div>
+                );
+              })}
+            </div>
+          )}
 
-              {unlocked ? (
-                <button
-                  onClick={() => setCurrentMusic(music.id)}
-                  disabled={isCurrent}
-                  className={cn(
-                    'text-sm px-3 py-1.5 rounded-lg transition-all flex-shrink-0',
-                    isCurrent 
-                      ? 'bg-blue-100 text-blue-500 cursor-default' 
-                      : 'bg-blue-100 text-blue-500 hover:bg-blue-200'
-                  )}
-                >
-                  {isCurrent ? '播放中' : '使用'}
-                </button>
+          {activeTab === 'bgms' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {bgms.map((bgm, index) => {
+                const unlocked = userAchievements.unlockedBgmIds.includes(bgm.id);
+                const isCurrent = userAchievements.currentBgmId === bgm.id;
+                return (
+                  <div
+                    key={bgm.id}
+                    className={cn(
+                      'card transition-all duration-300 animate-fade-in-up',
+                      isCurrent && 'ring-2 ring-gold-300',
+                      !unlocked && 'opacity-50'
+                    )}
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={cn(
+                        'w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0',
+                        unlocked
+                          ? 'bg-gradient-to-br from-purple-400 to-pink-400'
+                          : 'bg-paper-200'
+                      )}>
+                        {unlocked ? (
+                          <Music className="w-6 h-6 text-white" />
+                        ) : (
+                          <Lock className="w-5 h-5 text-ink-100" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="title-display text-base text-ink-400">
+                            {bgm.name}
+                          </h3>
+                          <span className={cn(
+                            'text-xs px-1.5 py-0.5 rounded',
+                            getRarityColor(bgm.rarity)
+                          )}>
+                            {getRarityText(bgm.rarity)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-ink-200 mb-1">
+                          {bgm.description}
+                        </p>
+                        <p className="text-xs text-ink-100">
+                          风格：{bgm.style} · 时长：{Math.floor(bgm.duration / 60)}:{(bgm.duration % 60).toString().padStart(2, '0')}
+                        </p>
+                      </div>
+                      <div>
+                        {unlocked && !isCurrent && (
+                          <button
+                            onClick={() => setCurrentBgm(bgm.id)}
+                            className="px-3 py-1.5 text-xs bg-paper-100 text-ink-300 rounded-lg hover:bg-paper-200 transition-colors"
+                          >
+                            使用
+                          </button>
+                        )}
+                        {isCurrent && (
+                          <Check className="w-5 h-5 text-gold-300" />
+                        )}
+                        {!unlocked && (
+                          <Lock className="w-4 h-4 text-ink-100" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {activeTab === 'titles' && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {userAchievements.titles.length === 0 ? (
+                <div className="col-span-full card text-center py-12">
+                  <Crown className="w-12 h-12 text-ink-100 mx-auto mb-3" />
+                  <p className="text-ink-200 text-sm">还没有获得称号</p>
+                  <p className="text-ink-100 text-xs mt-1">完成成就解锁专属称号</p>
+                </div>
               ) : (
-                <span className="text-ink-100 flex items-center gap-1 flex-shrink-0">
-                  <Lock className="w-4 h-4" />
-                </span>
+                userAchievements.titles.map((title, index) => {
+                  const isCurrent = userAchievements.currentTitle === title;
+                  return (
+                    <div
+                      key={index}
+                      className={cn(
+                        'card text-center p-4 cursor-pointer transition-all',
+                        isCurrent && 'ring-2 ring-gold-300'
+                      )}
+                      onClick={() => setCurrentTitle(title)}
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <div className="text-3xl mb-2">👑</div>
+                      <p className="text-sm font-medium text-ink-400 mb-1">
+                        {title}
+                      </p>
+                      {isCurrent && (
+                        <span className="text-xs text-gold-300">使用中</span>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
-          );
-        })}
-      </div>
-
-      <div className="card bg-paper-50">
-        <div className="text-sm text-ink-200 text-center">
-          💡 通过完成成就解锁更多皮肤和背景音乐
+          )}
         </div>
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen py-8">
-      <div className="container mx-auto px-4 max-w-3xl">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-500 rounded-full text-sm mb-6">
-            <Trophy className="w-4 h-4" />
-            成就系统
-          </div>
-          <h1 className="title-display text-4xl text-ink-400 mb-4">
-            我的成就
-          </h1>
-          <p className="text-ink-200 max-w-md mx-auto">
-            完成学习目标解锁成就，获得专属皮肤和背景音乐奖励
-          </p>
-        </div>
-
-        <div className="flex justify-center gap-2 mb-8">
-          <button
-            onClick={() => setActiveTab('achievements')}
-            className={cn(
-              'px-4 py-2 rounded-lg text-sm font-medium transition-all inline-flex items-center gap-2',
-              activeTab === 'achievements'
-                ? 'bg-purple-500 text-white'
-                : 'bg-paper-100 text-ink-200 hover:bg-paper-200'
-            )}
-          >
-            <Trophy className="w-4 h-4" />
-            成就
-          </button>
-          <button
-            onClick={() => setActiveTab('skins')}
-            className={cn(
-              'px-4 py-2 rounded-lg text-sm font-medium transition-all inline-flex items-center gap-2',
-              activeTab === 'skins'
-                ? 'bg-purple-500 text-white'
-                : 'bg-paper-100 text-ink-200 hover:bg-paper-200'
-            )}
-          >
-            <Palette className="w-4 h-4" />
-            皮肤
-          </button>
-          <button
-            onClick={() => setActiveTab('music')}
-            className={cn(
-              'px-4 py-2 rounded-lg text-sm font-medium transition-all inline-flex items-center gap-2',
-              activeTab === 'music'
-                ? 'bg-purple-500 text-white'
-                : 'bg-paper-100 text-ink-200 hover:bg-paper-200'
-            )}
-          >
-            <Music className="w-4 h-4" />
-            音乐
-          </button>
-        </div>
-
-        {activeTab === 'achievements' && renderAchievements()}
-        {activeTab === 'skins' && renderSkins()}
-        {activeTab === 'music' && renderMusic()}
       </div>
     </div>
   );

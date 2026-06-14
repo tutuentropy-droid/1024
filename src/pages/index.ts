@@ -12,3 +12,6 @@ export { default as VoiceLearnPage } from './VoiceLearnPage';
 export { default as WrongBookPage } from './WrongBookPage';
 export { default as TimeCapsulePage } from './TimeCapsulePage';
 export { default as DailyPoemPage } from './DailyPoemPage';
+export { default as CreationWorkshopPage } from './CreationWorkshopPage';
+export { default as RaceModePage } from './RaceModePage';
+export { default as AchievementPage } from './AchievementPage';

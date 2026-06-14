@@ -7,8 +7,7 @@ import type {
   AIImage, AudioTheaterProgress, AdventureProgress, AdventureScene,
   VoiceLearnCard, WrongQuestionGroup, TimeCapsule, StudyBuddy, 
   StudyBuddyMessage, DailyPoemHistory, AnimationScene, HistoricalEvent,
-  CreationWorkshopResult, RacingGame, Achievement, Skin, BackgroundMusic,
-  UserAchievements, RacingMatchItem, RacingPlayer, HistoricalIssue, PoeticAllusion
+  UserAchievements, CreationSubmission, RaceGame, RaceQuestion, RacePlayer
 } from '@/types';
 import { 
   dynasties, poems, events, getPoemById, getAllDynasties, 
@@ -18,8 +17,7 @@ import {
   virtualPoets, socialPosts, getVirtualPoetById,
   getAllAudioTheaters, getAudioTheaterById, getAllAdventures, getAdventureById,
   getAllGeoLocations, getGeoLocationsByDynastyId, getEventById,
-  getAllAchievements, getAllSkins, getAllBackgroundMusics, getAllCreationTopics,
-  getCreationTopicById, getSkinById, getBackgroundMusicById, getAchievementById
+  achievements, skins, bgms, creationWorkshops, getAchievementById, getSkinById, getBgmById
 } from '@/data';
 
 const initialUserProgress: UserProgress = {
@@ -68,14 +66,13 @@ const initialStudyBuddy: StudyBuddy = {
 };
 
 const initialUserAchievements: UserAchievements = {
-  unlockedAchievements: [],
-  unlockedSkins: ['skin-default'],
-  unlockedMusics: ['music-default'],
+  unlockedAchievementIds: [],
+  unlockedSkinIds: ['skin-default'],
+  unlockedBgmIds: ['bgm-default'],
   currentSkinId: 'skin-default',
-  currentMusicId: 'music-default',
-  totalPoints: 0,
-  racingWins: 0,
-  streakDays: 0,
+  currentBgmId: 'bgm-default',
+  titles: [],
+  currentTitle: '',
 };
 
 const generateTimeCapsuleAnalysis = (
@@ -471,188 +468,6 @@ const generateDailyPoemHistoryData = (): DailyPoemHistory => {
   };
 };
 
-const evaluateCreationWorkshop = (
-  topicId: string,
-  essay: string
-): CreationWorkshopResult => {
-  const topic = getCreationTopicById(topicId);
-  if (!topic) {
-    return {
-      id: `cw-${Date.now()}`,
-      topicId,
-      userEssay: essay,
-      score: 0,
-      historicalAccuracy: 0,
-      poeticUsage: 0,
-      creativity: 0,
-      feedback: ['未找到对应主题'],
-      historicalIssues: [],
-      poeticAllusions: [],
-      createdAt: Date.now(),
-    };
-  }
-
-  const lowerEssay = essay.toLowerCase();
-  let historicalAccuracy = 40;
-  let poeticUsage = 30;
-  let creativity = 50;
-  const feedback: string[] = [];
-  const historicalIssues: HistoricalIssue[] = [];
-  const poeticAllusions: PoeticAllusion[] = [];
-
-  const dynasty = dynasties.find(d => d.id === topic.dynastyId);
-
-  topic.relatedEventIds.forEach(eventId => {
-    const event = getEventById(eventId);
-    if (!event) return;
-    
-    if (lowerEssay.includes(event.name) || lowerEssay.includes(event.name.replace('之', ''))) {
-      historicalAccuracy += 15;
-      feedback.push(`你提到了"${event.name}"这个重要历史事件，很好！`);
-      
-      const eventKeywords = event.description.slice(0, 30);
-      if (lowerEssay.includes(eventKeywords.slice(0, 10))) {
-        historicalAccuracy += 10;
-      }
-    }
-  });
-
-  topic.relatedPoemIds.forEach((poemId, index) => {
-    const poem = getPoemById(poemId);
-    if (!poem) return;
-
-    const famousLine = poem.famousLine;
-    const lineParts = famousLine.split(/[，。、；]/).filter(p => p.length > 2);
-    
-    let usedCorrectly = false;
-    let usedLine = '';
-
-    lineParts.forEach(part => {
-      if (lowerEssay.includes(part) || essay.includes(part)) {
-        usedCorrectly = true;
-        usedLine = part;
-        poeticUsage += 12;
-      }
-    });
-
-    if (lowerEssay.includes(poem.title) || essay.includes(poem.title)) {
-      poeticUsage += 8;
-      usedCorrectly = true;
-      usedLine = usedLine || poem.title;
-    }
-
-    if (lowerEssay.includes(poem.author) || essay.includes(poem.author)) {
-      poeticUsage += 5;
-    }
-
-    if (usedCorrectly) {
-      poeticAllusions.push({
-        id: `allusion-${index}`,
-        poemId: poem.id,
-        poemTitle: poem.title,
-        author: poem.author,
-        usedLine,
-        isCorrect: true,
-        explanation: `${poem.author}《${poem.title}》中的"${usedLine}"用得贴切，为文章增色不少。`,
-      });
-    }
-  });
-
-  topic.keywords.forEach(keyword => {
-    if (lowerEssay.includes(keyword) || essay.includes(keyword)) {
-      historicalAccuracy += 5;
-      creativity += 3;
-    }
-  });
-
-  if (essay.length > 100) creativity += 5;
-  if (essay.length > 200) creativity += 10;
-  if (essay.length > 300) creativity += 10;
-
-  if (dynasty && lowerEssay.includes(dynasty.name)) {
-    historicalAccuracy += 5;
-  }
-
-  if (historicalAccuracy < 50) {
-    feedback.push('建议多结合一些具体的历史事件，让文章更有史实依据。');
-    historicalIssues.push({
-      id: 'issue-1',
-      type: 'warning',
-      description: '文中历史事件引用较少',
-      correctFact: topic.description,
-    });
-  }
-
-  if (poeticUsage < 40) {
-    feedback.push('可以尝试在文章中融入更多诗词名句，增加文学韵味。');
-  }
-
-  if (creativity < 50) {
-    feedback.push('发挥你的想象力，让故事更加生动有趣！');
-  }
-
-  if (historicalAccuracy >= 70) {
-    feedback.push('你对历史的把握很准确，史实运用得当！');
-  }
-
-  if (poeticUsage >= 60) {
-    feedback.push('诗词典故运用自如，文笔优美！');
-  }
-
-  historicalAccuracy = Math.min(98, Math.max(20, historicalAccuracy));
-  poeticUsage = Math.min(95, Math.max(20, poeticUsage));
-  creativity = Math.min(98, Math.max(30, creativity));
-
-  const totalScore = Math.round(historicalAccuracy * 0.4 + poeticUsage * 0.35 + creativity * 0.25);
-
-  return {
-    id: `cw-${Date.now()}`,
-    topicId,
-    userEssay: essay,
-    score: totalScore,
-    historicalAccuracy,
-    poeticUsage,
-    creativity,
-    feedback,
-    historicalIssues,
-    poeticAllusions,
-    createdAt: Date.now(),
-  };
-};
-
-const generateRacingItems = (count: number = 10): RacingMatchItem[] => {
-  const items: RacingMatchItem[] = [];
-  const shuffledPoems = [...poems].sort(() => Math.random() - 0.5);
-  const shuffledEvents = [...events].sort(() => Math.random() - 0.5);
-
-  const poemItems = shuffledPoems.slice(0, Math.floor(count * 0.7)).map(poem => {
-    const dynasty = dynasties.find(d => d.id === poem.dynastyId);
-    return {
-      id: `race-poem-${poem.id}`,
-      type: 'poem' as const,
-      content: `"${poem.famousLine}" —— ${poem.author}`,
-      dynastyId: poem.dynastyId,
-      dynastyName: dynasty?.name || '',
-      hint: `提示：这是${poem.author}的名句`,
-    };
-  });
-
-  const eventItems = shuffledEvents.slice(0, Math.ceil(count * 0.3)).map(event => {
-    const dynasty = dynasties.find(d => d.id === event.dynastyId);
-    return {
-      id: `race-event-${event.id}`,
-      type: 'event' as const,
-      content: `${event.name}（公元${event.year}年）`,
-      dynastyId: event.dynastyId,
-      dynastyName: dynasty?.name || '',
-      hint: `提示：发生于${event.year}年`,
-    };
-  });
-
-  items.push(...poemItems, ...eventItems);
-  return items.sort(() => Math.random() - 0.5).slice(0, count);
-};
-
 const generateAIRResponse = (poet: VirtualPoet, userMessage: string): string => {
   const lowerMsg = userMessage.toLowerCase();
   
@@ -742,14 +557,14 @@ export const useAppStore = create<AppStore>()(
       isStudyBuddyOpen: false,
       dailyPoemHistory: null,
       dailyPoemHistoryList: [],
-      creationWorkshopResults: [],
-      currentWorkshopTopicId: null,
-      racingGame: null,
-      racingHistory: [],
-      achievements: getAllAchievements(),
-      skins: getAllSkins(),
-      backgroundMusics: getAllBackgroundMusics(),
+      achievements: achievements,
+      skins: skins,
+      bgms: bgms,
       userAchievements: initialUserAchievements,
+      creationWorkshops: creationWorkshops,
+      creationSubmissions: [],
+      currentRaceGame: null,
+      raceHistory: [],
 
       selectDynasty: (id: string | null) => {
         set({ selectedDynastyId: id });
@@ -2044,220 +1859,86 @@ export const useAppStore = create<AppStore>()(
         return state.dailyPoemHistoryList.find(d => d.date === date);
       },
 
-      selectWorkshopTopic: (topicId: string | null) => {
-        set({ currentWorkshopTopicId: topicId });
-      },
-
-      submitCreationWorkshop: (topicId: string, essay: string): CreationWorkshopResult => {
-        const result = evaluateCreationWorkshop(topicId, essay);
-        set((state) => {
-          const newPoints = Math.floor(result.score * 0.5);
-          return {
-            creationWorkshopResults: [result, ...state.creationWorkshopResults],
-            userAchievements: {
-              ...state.userAchievements,
-              totalPoints: state.userAchievements.totalPoints + newPoints,
-            },
-          };
-        });
-        get().checkAchievements();
-        return result;
-      },
-
-      getCreationWorkshopResults: (): CreationWorkshopResult[] => {
-        return get().creationWorkshopResults;
-      },
-
-      startRacingGame: (player2Name: string = '诗友') => {
-        const items = generateRacingItems(10);
-        const players: RacingPlayer[] = [
-          {
-            id: 'player-1',
-            name: '我',
-            avatar: '👤',
-            score: 0,
-            currentRound: 0,
-            correctAnswers: 0,
-            totalTime: 0,
-            isReady: true,
-          },
-          {
-            id: 'player-2',
-            name: player2Name,
-            avatar: '🧑',
-            score: 0,
-            currentRound: 0,
-            correctAnswers: 0,
-            totalTime: 0,
-            isReady: true,
-          },
-        ];
-
-        set({
-          racingGame: {
-            id: `race-${Date.now()}`,
-            status: 'playing',
-            players,
-            currentTurn: 0,
-            items,
-            currentItemIndex: 0,
-            roundStartTime: Date.now(),
-            totalRounds: items.length,
-            winnerId: null,
-          },
-        });
-      },
-
-      answerRacingQuestion: (dynastyId: string): boolean => {
+      checkAchievements: (): string[] => {
         const state = get();
-        if (!state.racingGame || state.racingGame.status !== 'playing') return false;
+        const { userProgress, userAchievements, creationSubmissions, raceHistory } = state;
+        const newlyUnlocked: string[] = [];
 
-        const currentItem = state.racingGame.items[state.racingGame.currentItemIndex];
-        const isCorrect = currentItem.dynastyId === dynastyId;
-        const currentTurn = state.racingGame.currentTurn;
-        const timeSpent = (Date.now() - state.racingGame.roundStartTime) / 1000;
+        for (const achievement of state.achievements) {
+          if (userAchievements.unlockedAchievementIds.includes(achievement.id)) continue;
 
-        set((state) => {
-          if (!state.racingGame) return state;
-
-          const updatedPlayers = state.racingGame.players.map((player, index) => {
-            if (index === currentTurn) {
-              return {
-                ...player,
-                score: isCorrect ? player.score + Math.max(100 - Math.floor(timeSpent * 5), 20) : player.score,
-                correctAnswers: isCorrect ? player.correctAnswers + 1 : player.correctAnswers,
-                totalTime: player.totalTime + timeSpent,
-                currentRound: player.currentRound + 1,
-              };
-            }
-            return player;
-          });
-
-          const nextItemIndex = state.racingGame.currentItemIndex + 1;
-          const nextTurn = (currentTurn + 1) % 2;
-          const isFinished = nextItemIndex >= state.racingGame.items.length;
-
-          let winnerId: string | null = null;
-          if (isFinished) {
-            const p1 = updatedPlayers[0];
-            const p2 = updatedPlayers[1];
-            if (p1.score > p2.score) {
-              winnerId = p1.id;
-            } else if (p2.score > p1.score) {
-              winnerId = p2.id;
-            } else {
-              winnerId = p1.totalTime < p2.totalTime ? p1.id : p2.id;
-            }
-          }
-
-          return {
-            racingGame: {
-              ...state.racingGame,
-              players: updatedPlayers,
-              currentTurn: isFinished ? currentTurn : nextTurn,
-              currentItemIndex: nextItemIndex,
-              roundStartTime: Date.now(),
-              status: isFinished ? 'finished' : 'playing',
-              winnerId,
-            },
-          };
-        });
-
-        return isCorrect;
-      },
-
-      endRacingGame: () => {
-        const state = get();
-        if (state.racingGame) {
-          const isWinner = state.racingGame.winnerId === 'player-1';
-          set((state) => ({
-            racingHistory: state.racingGame
-              ? [state.racingGame, ...state.racingHistory].slice(0, 20)
-              : state.racingHistory,
-            userAchievements: {
-              ...state.userAchievements,
-              racingWins: state.userAchievements.racingWins + (isWinner ? 1 : 0),
-              totalPoints: state.userAchievements.totalPoints + (isWinner ? 50 : 10),
-            },
-            racingGame: null,
-          }));
-          get().checkAchievements();
-        }
-      },
-
-      getRacingHistory: (): RacingGame[] => {
-        return get().racingHistory;
-      },
-
-      checkAchievements: (): Achievement[] => {
-        const state = get();
-        const { userProgress, userAchievements } = state;
-        const newlyUnlocked: Achievement[] = [];
-
-        state.achievements.forEach(achievement => {
-          if (userAchievements.unlockedAchievements.includes(achievement.id)) return;
-
-          let unlocked = false;
+          let isUnlocked = false;
           const req = achievement.requirement;
 
           switch (req.type) {
-            case 'poems_studied':
-              unlocked = userProgress.totalPoemsStudied >= req.target;
+            case 'study_count':
+              isUnlocked = userProgress.totalPoemsStudied >= req.target;
               break;
-            case 'dynasty_completed':
+            case 'accuracy':
+              isUnlocked = userProgress.averageAccuracy * 100 >= req.target;
+              break;
+            case 'dynasty_complete':
               if (req.dynastyId) {
-                unlocked = userProgress.completedDynasties.includes(req.dynastyId);
+                isUnlocked = userProgress.completedDynasties.includes(req.dynastyId);
               }
               break;
-            case 'quiz_accuracy':
-              unlocked = userProgress.averageAccuracy * 100 >= req.target;
+            case 'creation_count':
+              isUnlocked = creationSubmissions.length >= req.target;
               break;
-            case 'streak_days':
-              unlocked = userAchievements.streakDays >= req.target;
+            case 'race_win':
+              const wins = raceHistory.filter(g => g.winnerId === 'player-1').length;
+              isUnlocked = wins >= req.target;
               break;
-            case 'total_score':
-              unlocked = userAchievements.totalPoints >= req.target;
-              break;
-            case 'racing_wins':
-              unlocked = userAchievements.racingWins >= req.target;
+            case 'streak':
+              isUnlocked = state.studyBuddy.currentStreak >= req.target;
               break;
           }
 
-          if (unlocked) {
-            newlyUnlocked.push(achievement);
-            get().unlockAchievement(achievement.id);
+          if (isUnlocked) {
+            newlyUnlocked.push(achievement.id);
           }
-        });
+        }
 
         return newlyUnlocked;
       },
 
       unlockAchievement: (achievementId: string) => {
         set((state) => {
-          const achievement = state.achievements.find(a => a.id === achievementId);
-          if (!achievement || state.userAchievements.unlockedAchievements.includes(achievementId)) {
-            return state;
+          if (state.userAchievements.unlockedAchievementIds.includes(achievementId)) {
+            return {};
           }
 
-          let newUnlockedSkins = [...state.userAchievements.unlockedSkins];
-          let newUnlockedMusics = [...state.userAchievements.unlockedMusics];
+          const achievement = getAchievementById(achievementId);
+          if (!achievement) return {};
 
-          if (achievement.reward.type === 'skin') {
-            if (!newUnlockedSkins.includes(achievement.reward.id)) {
-              newUnlockedSkins.push(achievement.reward.id);
-            }
-          } else if (achievement.reward.type === 'music') {
-            if (!newUnlockedMusics.includes(achievement.reward.id)) {
-              newUnlockedMusics.push(achievement.reward.id);
+          const newUnlockedSkins = [...state.userAchievements.unlockedSkinIds];
+          const newUnlockedBgms = [...state.userAchievements.unlockedBgmIds];
+          const newTitles = [...state.userAchievements.titles];
+
+          if (achievement.rewardType === 'skin' && !newUnlockedSkins.includes(achievement.rewardId)) {
+            newUnlockedSkins.push(achievement.rewardId);
+          } else if (achievement.rewardType === 'bgm' && !newUnlockedBgms.includes(achievement.rewardId)) {
+            newUnlockedBgms.push(achievement.rewardId);
+          } else if (achievement.rewardType === 'title') {
+            const titleMap: Record<string, string> = {
+              'title-yuan-master': '元曲行家',
+              'title-talented': '才高八斗',
+              'title-beginner-writer': '初习文墨',
+              'title-persistent': '持之以恒',
+            };
+            const titleName = titleMap[achievement.rewardId] || achievement.rewardId;
+            if (!newTitles.includes(titleName)) {
+              newTitles.push(titleName);
             }
           }
 
           return {
             userAchievements: {
               ...state.userAchievements,
-              unlockedAchievements: [...state.userAchievements.unlockedAchievements, achievementId],
-              unlockedSkins: newUnlockedSkins,
-              unlockedMusics: newUnlockedMusics,
+              unlockedAchievementIds: [...state.userAchievements.unlockedAchievementIds, achievementId],
+              unlockedSkinIds: newUnlockedSkins,
+              unlockedBgmIds: newUnlockedBgms,
+              titles: newTitles,
             },
           };
         });
@@ -2265,7 +1946,7 @@ export const useAppStore = create<AppStore>()(
 
       setCurrentSkin: (skinId: string) => {
         set((state) => {
-          if (!state.userAchievements.unlockedSkins.includes(skinId)) return state;
+          if (!state.userAchievements.unlockedSkinIds.includes(skinId)) return {};
           return {
             userAchievements: {
               ...state.userAchievements,
@@ -2275,33 +1956,298 @@ export const useAppStore = create<AppStore>()(
         });
       },
 
-      setCurrentMusic: (musicId: string) => {
+      setCurrentBgm: (bgmId: string) => {
         set((state) => {
-          if (!state.userAchievements.unlockedMusics.includes(musicId)) return state;
+          if (!state.userAchievements.unlockedBgmIds.includes(bgmId)) return {};
           return {
             userAchievements: {
               ...state.userAchievements,
-              currentMusicId: musicId,
+              currentBgmId: bgmId,
             },
           };
         });
       },
 
-      getCurrentSkin: (): Skin | undefined => {
-        const state = get();
-        return state.skins.find(s => s.id === state.userAchievements.currentSkinId);
+      setCurrentTitle: (title: string) => {
+        set((state) => {
+          if (!state.userAchievements.titles.includes(title)) return {};
+          return {
+            userAchievements: {
+              ...state.userAchievements,
+              currentTitle: title,
+            },
+          };
+        });
       },
 
-      getCurrentMusic: (): BackgroundMusic | undefined => {
-        const state = get();
-        return state.backgroundMusics.find(m => m.id === state.userAchievements.currentMusicId);
+      getCreationWorkshops: () => {
+        return get().creationWorkshops;
       },
 
-      getUnlockedAchievements: (): Achievement[] => {
+      submitCreation: (workshopId: string, title: string, content: string, usedPoemIds: string[], usedEventIds: string[]): CreationSubmission => {
         const state = get();
-        return state.achievements.filter(a => 
-          state.userAchievements.unlockedAchievements.includes(a.id)
-        );
+        const workshop = state.creationWorkshops.find(w => w.id === workshopId);
+
+        let historicalAccuracy = 50;
+        let poeticUsage = 50;
+        let creativity = 50;
+        let fluency = 50;
+
+        const historicalPoints: string[] = [];
+        const poeticPoints: string[] = [];
+        const suggestions: string[] = [];
+
+        if (usedEventIds.length > 0) {
+          historicalAccuracy += usedEventIds.length * 10;
+          historicalPoints.push(`正确引用了${usedEventIds.length}个历史事件，史实基础扎实。`);
+        } else {
+          suggestions.push('建议在创作中融入更多历史事件，增强史实性。');
+        }
+
+        if (usedPoemIds.length >= 2) {
+          poeticUsage += usedPoemIds.length * 8;
+          poeticPoints.push(`巧妙化用了${usedPoemIds.length}句诗词，文采斐然。`);
+        } else {
+          suggestions.push('可以尝试引用更多诗词名句，提升文学性。');
+        }
+
+        const contentLength = content.length;
+        if (contentLength > 200) {
+          fluency += 15;
+          creativity += 10;
+        }
+        if (contentLength > 500) {
+          fluency += 10;
+          creativity += 15;
+          historicalPoints.push('内容充实，论述详尽。');
+        }
+
+        if (workshop) {
+          const requiredPoemsUsed = workshop.requiredPoemIds.filter(id => usedPoemIds.includes(id)).length;
+          if (requiredPoemsUsed === workshop.requiredPoemIds.length) {
+            poeticUsage += 10;
+            poeticPoints.push('完美使用了题目要求的所有诗句！');
+          } else if (requiredPoemsUsed > 0) {
+            poeticPoints.push(`使用了${requiredPoemsUsed}/${workshop.requiredPoemIds.length}首指定诗词。`);
+          }
+
+          const requiredEventsUsed = workshop.requiredEventIds.filter(id => usedEventIds.includes(id)).length;
+          if (requiredEventsUsed === workshop.requiredEventIds.length) {
+            historicalAccuracy += 10;
+            historicalPoints.push('完美结合了所有指定的历史事件！');
+          }
+        }
+
+        historicalAccuracy = Math.min(100, historicalAccuracy);
+        poeticUsage = Math.min(100, poeticUsage);
+        creativity = Math.min(100, creativity);
+        fluency = Math.min(100, fluency);
+
+        const total = Math.round((historicalAccuracy + poeticUsage + creativity + fluency) / 4);
+
+        if (total >= 80) {
+          suggestions.push('作品优秀！继续保持，挑战更高难度吧。');
+        } else if (total >= 60) {
+          suggestions.push('写得不错，还有提升空间，加油！');
+        } else {
+          suggestions.push('多学习积累，相信下次会更好！');
+        }
+
+        const submission: CreationSubmission = {
+          id: `submission-${Date.now()}`,
+          workshopId,
+          title,
+          content,
+          usedPoemIds,
+          usedEventIds,
+          score: {
+            total,
+            historicalAccuracy,
+            poeticUsage,
+            creativity,
+            fluency,
+          },
+          feedback: {
+            historicalPoints,
+            poeticPoints,
+            suggestions,
+          },
+          submittedAt: Date.now(),
+        };
+
+        set((state) => ({
+          creationSubmissions: [submission, ...state.creationSubmissions],
+        }));
+
+        return submission;
+      },
+
+      getCreationSubmissions: () => {
+        return get().creationSubmissions;
+      },
+
+      startRaceGame: (mode: 'single' | 'dual') => {
+        const state = get();
+        const questions: RaceQuestion[] = [];
+
+        const shuffledPoems = [...poems].sort(() => Math.random() - 0.5).slice(0, 8);
+        const shuffledEvents = [...events].sort(() => Math.random() - 0.5).slice(0, 4);
+
+        const allDynasties = getAllDynasties();
+        const dynastyNames = allDynasties.map(d => d.name);
+
+        for (let i = 0; i < 8; i++) {
+          const poem = shuffledPoems[i];
+          const correctDynasty = allDynasties.find(d => d.id === poem.dynastyId)!;
+          const wrongOptions = dynastyNames
+            .filter(name => name !== correctDynasty.name)
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 3);
+
+          const options = [...wrongOptions, correctDynasty.name].sort(() => Math.random() - 0.5);
+
+          questions.push({
+            id: `race-q-${i}`,
+            type: 'poem_to_dynasty',
+            question: `「${poem.famousLine}」出自哪个朝代？`,
+            options,
+            correctAnswer: correctDynasty.name,
+            poemId: poem.id,
+            dynastyId: poem.dynastyId,
+          });
+        }
+
+        for (let i = 0; i < 4; i++) {
+          const event = shuffledEvents[i];
+          const correctDynasty = allDynasties.find(d => d.id === event.dynastyId)!;
+          const wrongOptions = dynastyNames
+            .filter(name => name !== correctDynasty.name)
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 3);
+
+          const options = [...wrongOptions, correctDynasty.name].sort(() => Math.random() - 0.5);
+
+          questions.push({
+            id: `race-e-${i}`,
+            type: 'event_to_dynasty',
+            question: `「${event.name}」发生在哪个朝代？`,
+            options,
+            correctAnswer: correctDynasty.name,
+            eventId: event.id,
+            dynastyId: event.dynastyId,
+          });
+        }
+
+        const shuffledQuestions = questions.sort(() => Math.random() - 0.5).slice(0, 10);
+
+        const players: RacePlayer[] = [
+          {
+            id: 'player-1',
+            name: '我',
+            avatar: '👤',
+            isCurrentUser: true,
+            score: 0,
+            correctCount: 0,
+            totalTime: 0,
+            currentAnswer: null,
+            isReady: true,
+          },
+        ];
+
+        if (mode === 'dual') {
+          players.push({
+            id: 'player-2',
+            name: '诗友小文',
+            avatar: '🧑',
+            isCurrentUser: false,
+            score: 0,
+            correctCount: 0,
+            totalTime: 0,
+            currentAnswer: null,
+            isReady: true,
+          });
+        }
+
+        const game: RaceGame = {
+          id: `race-${Date.now()}`,
+          status: 'playing',
+          players,
+          questions: shuffledQuestions,
+          currentQuestionIndex: 0,
+          startTime: Date.now(),
+          winnerId: null,
+        };
+
+        set({ currentRaceGame: game });
+      },
+
+      answerRaceQuestion: (answer: string) => {
+        set((state) => {
+          if (!state.currentRaceGame || state.currentRaceGame.status !== 'playing') return {};
+
+          const game = state.currentRaceGame;
+          const currentQuestion = game.questions[game.currentQuestionIndex];
+          const isCorrect = answer === currentQuestion.correctAnswer;
+          const timeTaken = (Date.now() - (game.startTime || Date.now())) / 1000;
+
+          const updatedPlayers = game.players.map((player) => {
+            if (player.isCurrentUser) {
+              return {
+                ...player,
+                currentAnswer: answer,
+                correctCount: player.correctCount + (isCorrect ? 1 : 0),
+                score: player.score + (isCorrect ? Math.max(10, 100 - Math.floor(timeTaken * 2)) : 0),
+                totalTime: timeTaken,
+              };
+            } else {
+              const aiCorrect = Math.random() > 0.3;
+              const aiTime = timeTaken + (Math.random() * 2 - 1);
+              return {
+                ...player,
+                currentAnswer: aiCorrect ? currentQuestion.correctAnswer : currentQuestion.options[Math.floor(Math.random() * currentQuestion.options.length)],
+                correctCount: player.correctCount + (aiCorrect ? 1 : 0),
+                score: player.score + (aiCorrect ? Math.max(10, 100 - Math.floor(aiTime * 2)) : 0),
+                totalTime: aiTime,
+              };
+            }
+          });
+
+          const nextIndex = game.currentQuestionIndex + 1;
+          const isFinished = nextIndex >= game.questions.length;
+
+          let winnerId: string | null = null;
+          if (isFinished) {
+            const sortedPlayers = [...updatedPlayers].sort((a, b) => {
+              if (b.correctCount !== a.correctCount) return b.correctCount - a.correctCount;
+              return a.totalTime - b.totalTime;
+            });
+            winnerId = sortedPlayers[0].id;
+          }
+
+          return {
+            currentRaceGame: {
+              ...game,
+              players: updatedPlayers,
+              currentQuestionIndex: nextIndex,
+              status: isFinished ? 'finished' : 'playing',
+              winnerId,
+            },
+          };
+        });
+      },
+
+      finishRaceGame: () => {
+        set((state) => {
+          if (!state.currentRaceGame) return {};
+          return {
+            raceHistory: [state.currentRaceGame, ...state.raceHistory].slice(0, 20),
+            currentRaceGame: null,
+          };
+        });
+      },
+
+      getRaceHistory: () => {
+        return get().raceHistory;
       },
     }),
     {
@@ -2329,9 +2275,9 @@ export const useAppStore = create<AppStore>()(
         studyBuddy: state.studyBuddy,
         studyBuddyMessages: state.studyBuddyMessages,
         dailyPoemHistoryList: state.dailyPoemHistoryList,
-        creationWorkshopResults: state.creationWorkshopResults,
-        racingHistory: state.racingHistory,
         userAchievements: state.userAchievements,
+        creationSubmissions: state.creationSubmissions,
+        raceHistory: state.raceHistory,
       }),
     }
   )

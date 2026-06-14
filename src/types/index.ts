@@ -496,14 +496,14 @@ export interface AppState {
   isStudyBuddyOpen: boolean;
   dailyPoemHistory: DailyPoemHistory | null;
   dailyPoemHistoryList: DailyPoemHistory[];
-  creationWorkshopResults: CreationWorkshopResult[];
-  currentWorkshopTopicId: string | null;
-  racingGame: RacingGame | null;
-  racingHistory: RacingGame[];
   achievements: Achievement[];
   skins: Skin[];
-  backgroundMusics: BackgroundMusic[];
+  bgms: BGM[];
   userAchievements: UserAchievements;
+  creationWorkshops: CreationWorkshop[];
+  creationSubmissions: CreationSubmission[];
+  currentRaceGame: RaceGame | null;
+  raceHistory: RaceGame[];
 }
 
 export interface AppActions {
@@ -570,20 +570,18 @@ export interface AppActions {
   markDailyPoemAsRead: (date: string) => void;
   toggleDailyPoemFavorite: (date: string) => void;
   getDailyPoemHistoryByDate: (date: string) => DailyPoemHistory | undefined;
-  selectWorkshopTopic: (topicId: string | null) => void;
-  submitCreationWorkshop: (topicId: string, essay: string) => CreationWorkshopResult;
-  getCreationWorkshopResults: () => CreationWorkshopResult[];
-  startRacingGame: (player2Name?: string) => void;
-  answerRacingQuestion: (dynastyId: string) => boolean;
-  endRacingGame: () => void;
-  getRacingHistory: () => RacingGame[];
-  checkAchievements: () => Achievement[];
+  checkAchievements: () => string[];
   unlockAchievement: (achievementId: string) => void;
   setCurrentSkin: (skinId: string) => void;
-  setCurrentMusic: (musicId: string) => void;
-  getCurrentSkin: () => Skin | undefined;
-  getCurrentMusic: () => BackgroundMusic | undefined;
-  getUnlockedAchievements: () => Achievement[];
+  setCurrentBgm: (bgmId: string) => void;
+  setCurrentTitle: (title: string) => void;
+  getCreationWorkshops: () => CreationWorkshop[];
+  submitCreation: (workshopId: string, title: string, content: string, usedPoemIds: string[], usedEventIds: string[]) => CreationSubmission;
+  getCreationSubmissions: () => CreationSubmission[];
+  startRaceGame: (mode: 'single' | 'dual') => void;
+  answerRaceQuestion: (answer: string) => void;
+  finishRaceGame: () => void;
+  getRaceHistory: () => RaceGame[];
 }
 
 export interface TimeCapsule {
@@ -661,99 +659,20 @@ export interface AnimationScene {
   poemLine?: string;
 }
 
-export interface CreationWorkshopTopic {
-  id: string;
-  title: string;
-  description: string;
-  dynastyId: string;
-  relatedEventIds: string[];
-  relatedPoemIds: string[];
-  difficulty: 'easy' | 'medium' | 'hard';
-  sampleEssay: string;
-  keywords: string[];
-}
-
-export interface CreationWorkshopResult {
-  id: string;
-  topicId: string;
-  userEssay: string;
-  score: number;
-  historicalAccuracy: number;
-  poeticUsage: number;
-  creativity: number;
-  feedback: string[];
-  historicalIssues: HistoricalIssue[];
-  poeticAllusions: PoeticAllusion[];
-  createdAt: number;
-}
-
-export interface HistoricalIssue {
-  id: string;
-  type: 'error' | 'warning' | 'info';
-  description: string;
-  correctFact: string;
-  relatedEventId?: string;
-}
-
-export interface PoeticAllusion {
-  id: string;
-  poemId: string;
-  poemTitle: string;
-  author: string;
-  usedLine: string;
-  isCorrect: boolean;
-  explanation: string;
-}
-
-export interface RacingMatchItem {
-  id: string;
-  type: 'poem' | 'event';
-  content: string;
-  dynastyId: string;
-  dynastyName: string;
-  hint?: string;
-}
-
-export interface RacingPlayer {
-  id: string;
-  name: string;
-  avatar: string;
-  score: number;
-  currentRound: number;
-  correctAnswers: number;
-  totalTime: number;
-  isReady: boolean;
-}
-
-export interface RacingGame {
-  id: string;
-  status: 'waiting' | 'playing' | 'finished';
-  players: RacingPlayer[];
-  currentTurn: number;
-  items: RacingMatchItem[];
-  currentItemIndex: number;
-  roundStartTime: number;
-  totalRounds: number;
-  winnerId: string | null;
-}
-
 export interface Achievement {
   id: string;
   name: string;
   description: string;
   icon: string;
-  category: 'dynasty' | 'poem' | 'quiz' | 'social' | 'special';
-  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  category: 'dynasty' | 'poem' | 'quiz' | 'creation' | 'race' | 'special';
   requirement: {
-    type: 'poems_studied' | 'dynasty_completed' | 'quiz_accuracy' | 'streak_days' | 'total_score' | 'racing_wins';
+    type: 'study_count' | 'accuracy' | 'dynasty_complete' | 'creation_count' | 'race_win' | 'streak';
     target: number;
     dynastyId?: string;
   };
-  reward: {
-    type: 'skin' | 'music' | 'title';
-    id: string;
-  };
-  unlockedAt?: number;
+  rewardType: 'skin' | 'bgm' | 'title';
+  rewardId: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
 }
 
 export interface Skin {
@@ -761,39 +680,97 @@ export interface Skin {
   name: string;
   description: string;
   theme: {
-    primary: string;
-    secondary: string;
-    accent: string;
-    background: string;
-    cardBg: string;
-    text: string;
+    primaryColor: string;
+    secondaryColor: string;
+    accentColor: string;
+    backgroundColor: string;
   };
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
-  unlocked: boolean;
-  unlockedAt?: number;
 }
 
-export interface BackgroundMusic {
+export interface BGM {
   id: string;
   name: string;
   description: string;
-  composer?: string;
-  dynastyId?: string;
-  audioUrl: string;
+  style: string;
+  duration: number;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
-  unlocked: boolean;
-  unlockedAt?: number;
 }
 
 export interface UserAchievements {
-  unlockedAchievements: string[];
-  unlockedSkins: string[];
-  unlockedMusics: string[];
+  unlockedAchievementIds: string[];
+  unlockedSkinIds: string[];
+  unlockedBgmIds: string[];
   currentSkinId: string;
-  currentMusicId: string;
-  totalPoints: number;
-  racingWins: number;
-  streakDays: number;
+  currentBgmId: string;
+  titles: string[];
+  currentTitle: string;
+}
+
+export interface CreationWorkshop {
+  id: string;
+  title: string;
+  description: string;
+  dynastyId: string;
+  requiredPoemIds: string[];
+  requiredEventIds: string[];
+  difficulty: 'easy' | 'medium' | 'hard';
+  sampleTopic: string;
+}
+
+export interface CreationSubmission {
+  id: string;
+  workshopId: string;
+  title: string;
+  content: string;
+  usedPoemIds: string[];
+  usedEventIds: string[];
+  score: {
+    total: number;
+    historicalAccuracy: number;
+    poeticUsage: number;
+    creativity: number;
+    fluency: number;
+  };
+  feedback: {
+    historicalPoints: string[];
+    poeticPoints: string[];
+    suggestions: string[];
+  };
+  submittedAt: number;
+}
+
+export interface RaceGame {
+  id: string;
+  status: 'waiting' | 'playing' | 'finished';
+  players: RacePlayer[];
+  questions: RaceQuestion[];
+  currentQuestionIndex: number;
+  startTime: number | null;
+  winnerId: string | null;
+}
+
+export interface RacePlayer {
+  id: string;
+  name: string;
+  avatar: string;
+  isCurrentUser: boolean;
+  score: number;
+  correctCount: number;
+  totalTime: number;
+  currentAnswer: string | null;
+  isReady: boolean;
+}
+
+export interface RaceQuestion {
+  id: string;
+  type: 'poem_to_dynasty' | 'dynasty_to_poem' | 'event_to_dynasty' | 'poet_to_dynasty';
+  question: string;
+  options: string[];
+  correctAnswer: string;
+  poemId?: string;
+  eventId?: string;
+  dynastyId: string;
 }
 
 export type AppStore = AppState & AppActions;

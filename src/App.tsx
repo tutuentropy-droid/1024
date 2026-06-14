@@ -1,12 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Layout } from '@/components/layout';
-import { HomePage, TimelinePage, CardPage, QuizPage, ProgressPage, GroupPage, SocialPage, AudioTheaterPage, TimeMachinePage, PoetryMapPage, VoiceLearnPage, WrongBookPage, TimeCapsulePage, DailyPoemPage } from '@/pages';
+import { HomePage, TimelinePage, CardPage, QuizPage, ProgressPage, GroupPage, SocialPage, AudioTheaterPage, TimeMachinePage, PoetryMapPage, VoiceLearnPage, WrongBookPage, TimeCapsulePage, DailyPoemPage, CreationWorkshopPage, RaceModePage, AchievementPage } from '@/pages';
 import CrossDynastyComparison from '@/components/features/CrossDynastyComparison';
 import DailyChallenge from '@/components/features/DailyChallenge';
 import StudyBuddy from '@/components/features/StudyBuddy';
-import CreationWorkshop from '@/components/features/CreationWorkshop';
-import RacingMode from '@/components/features/RacingMode';
-import AchievementSystem from '@/components/features/AchievementSystem';
 
 export default function App() {
   return (
@@ -30,9 +27,9 @@ export default function App() {
           <Route path="/wrongbook" element={<WrongBookPage />} />
           <Route path="/timecapsule" element={<TimeCapsulePage />} />
           <Route path="/dailypoem" element={<DailyPoemPage />} />
-          <Route path="/workshop" element={<CreationWorkshop />} />
-          <Route path="/racing" element={<RacingMode />} />
-          <Route path="/achievements" element={<AchievementSystem />} />
+          <Route path="/creation" element={<CreationWorkshopPage />} />
+          <Route path="/race" element={<RaceModePage />} />
+          <Route path="/achievements" element={<AchievementPage />} />
           <Route path="*" element={<HomePage />} />
         </Route>
       </Routes>

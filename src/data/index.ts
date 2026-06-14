@@ -8,21 +8,21 @@ import { socialPosts, getSocialPostsByDynastyId, getSocialPostsByPoetId } from '
 import { audioTheaters, getAllAudioTheaters, getAudioTheaterById, getAudioTheatersByDynastyId } from './audioTheaters';
 import { adventures, getAllAdventures, getAdventureById, getAdventuresByDynastyId } from './adventures';
 import { geoLocations, getAllGeoLocations, getGeoLocationsByDynastyId, getGeoLocationById } from './geoLocations';
-import { achievements, getAllAchievements, getAchievementById, getAchievementsByCategory } from './achievements';
-import { skins, getAllSkins, getSkinById } from './skins';
-import { backgroundMusics, getAllBackgroundMusics, getBackgroundMusicById } from './backgroundMusics';
-import { creationWorkshopTopics, getAllCreationTopics, getCreationTopicById, getCreationTopicsByDynasty, getCreationTopicsByDifficulty } from './creationWorkshop';
-import type { Dynasty, Poem, HistoricalEvent, DynastySubPeriod, DynastyComparison, DailyChallenge, DailyChallengeItem, VirtualPoet, SocialPost, AudioTheater, Adventure, GeoLocation, Achievement, Skin, BackgroundMusic, CreationWorkshopTopic } from '@/types';
+import { achievements, getAchievementById, getAchievementsByCategory } from './achievements';
+import { skins, getSkinById } from './skins';
+import { bgms, getBgmById } from './bgms';
+import { creationWorkshops, getCreationWorkshopById, getCreationWorkshopsByDynastyId } from './creationWorkshops';
+import type { Dynasty, Poem, HistoricalEvent, DynastySubPeriod, DynastyComparison, DailyChallenge, DailyChallengeItem, VirtualPoet, SocialPost, AudioTheater, Adventure, GeoLocation, Achievement, Skin, BGM, CreationWorkshop } from '@/types';
 
-export { dynasties, poems, events, subPeriods, comparisons, virtualPoets, socialPosts, audioTheaters, adventures, geoLocations, achievements, skins, backgroundMusics, creationWorkshopTopics };
+export { dynasties, poems, events, subPeriods, comparisons, virtualPoets, socialPosts, audioTheaters, adventures, geoLocations, achievements, skins, bgms, creationWorkshops };
 export { getVirtualPoetById, getAllVirtualPoets, getVirtualPoetsByDynastyId, getSocialPostsByDynastyId, getSocialPostsByPoetId };
 export { getAllAudioTheaters, getAudioTheaterById, getAudioTheatersByDynastyId };
 export { getAllAdventures, getAdventureById, getAdventuresByDynastyId };
 export { getAllGeoLocations, getGeoLocationsByDynastyId, getGeoLocationById };
-export { getAllAchievements, getAchievementById, getAchievementsByCategory };
-export { getAllSkins, getSkinById };
-export { getAllBackgroundMusics, getBackgroundMusicById };
-export { getAllCreationTopics, getCreationTopicById, getCreationTopicsByDynasty, getCreationTopicsByDifficulty };
+export { getAchievementById, getAchievementsByCategory };
+export { getSkinById };
+export { getBgmById };
+export { getCreationWorkshopById, getCreationWorkshopsByDynastyId };
 
 export const getAllDynasties = (): Dynasty[] => {
   return dynasties.sort((a, b) => a.startYear - b.startYear);
