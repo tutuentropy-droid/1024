@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { History, BookOpen, Brain, Award, ChevronRight, ScrollText, Sparkles, GitCompare, Zap, Users, MessageCircle, Image, FileText, Music, Clock, Hourglass, Sun, PenTool, Trophy, Crown } from 'lucide-react';
+import { History, BookOpen, Brain, Award, ChevronRight, ScrollText, Sparkles, GitCompare, Zap, Users, MessageCircle, Image, FileText, Music, Clock, Hourglass, Sun } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { getAllPoems } from '@/data';
 import { cn } from '@/lib/utils';
@@ -136,36 +136,6 @@ const HomePage = () => {
       color: 'from-amber-400 to-amber-600',
       bgColor: 'bg-amber-50',
       textColor: 'text-amber-600',
-    },
-    {
-      icon: PenTool,
-      title: '创作工坊',
-      description: '用所学诗句和历史事件改写短文，AI打分并指出史实和用典准确性。',
-      path: '/creation',
-      color: 'from-purple-500 to-pink-500',
-      bgColor: 'bg-purple-50',
-      textColor: 'text-purple-500',
-      highlight: true,
-    },
-    {
-      icon: Zap,
-      title: '双人竞速',
-      description: '两人依次匹配诗句与朝代，用时短者胜，挑战你的速度与知识！',
-      path: '/race',
-      color: 'from-orange-400 to-red-500',
-      bgColor: 'bg-orange-50',
-      textColor: 'text-orange-400',
-      highlight: true,
-    },
-    {
-      icon: Trophy,
-      title: '成就系统',
-      description: '完成学习目标解锁成就，获得"盛唐通""宋词百晓生"等称号，还有专属皮肤和BGM。',
-      path: '/achievements',
-      color: 'from-gold-400 to-amber-500',
-      bgColor: 'bg-gold-50',
-      textColor: 'text-gold-300',
-      highlight: true,
     },
   ];
 

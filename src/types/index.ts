@@ -504,6 +504,10 @@ export interface AppState {
   creationSubmissions: CreationSubmission[];
   currentRaceGame: RaceGame | null;
   raceHistory: RaceGame[];
+  dynastyMemoryAtlases: Record<string, DynastyMemoryAtlas>;
+  focusTimerState: FocusTimerState;
+  personalKnowledgeTrees: PersonalKnowledgeTree[];
+  currentKnowledgeTreeId: string | null;
 }
 
 export interface AppActions {
@@ -771,6 +775,107 @@ export interface RaceQuestion {
   poemId?: string;
   eventId?: string;
   dynastyId: string;
+}
+
+export interface MemoryAtlasNode {
+  id: string;
+  type: 'concept' | 'poem' | 'event' | 'poet';
+  x: number;
+  y: number;
+  label: string;
+  content: string;
+  dynastyId: string;
+  relatedIds: string[];
+  imagePrompt?: string;
+}
+
+export interface MemoryAtlasConnection {
+  id: string;
+  fromId: string;
+  toId: string;
+  label: string;
+  description: string;
+  lineStyle?: 'solid' | 'dashed';
+}
+
+export interface DynastyMemoryAtlas {
+  id: string;
+  dynastyId: string;
+  isUnlocked: boolean;
+  nodes: MemoryAtlasNode[];
+  connections: MemoryAtlasConnection[];
+  backgroundStyle: string;
+  aiImagePrompt: string;
+  viewCount: number;
+  generatedImageUrl?: string;
+  unlockedAt?: number;
+}
+
+export interface FocusSession {
+  id: string;
+  dynastyId: string;
+  duration: number;
+  startTime: number;
+  isCompleted: boolean;
+}
+
+export interface FocusTimerState {
+  currentSession: FocusSession | null;
+  timeRemaining: number;
+  isRunning: boolean;
+  totalFocusTime: number;
+  completedSessions: number;
+  currentStreak: number;
+  longestStreak: number;
+  breakSurprisePoems: string[];
+}
+
+export interface KnowledgeTreeNode {
+  id: string;
+  type: 'concept' | 'dynasty' | 'poem' | 'event' | 'poet';
+  label: string;
+  x: number;
+  y: number;
+  parentId?: string;
+  isLearned: boolean;
+  details?: {
+    poemsLearned?: number;
+    poemsTotal?: number;
+    description?: string;
+  };
+}
+
+export interface KnowledgeTreeConnection {
+  id: string;
+  fromId: string;
+  toId: string;
+  label?: string;
+}
+
+export interface PersonalKnowledgeTree {
+  id: string;
+  nodes: KnowledgeTreeNode[];
+  connections: KnowledgeTreeConnection[];
+  createdAt: number;
+  updatedAt: number;
+  exportedCount: number;
+  shareCount: number;
+}
+
+export interface ExportImageConfig {
+  format: 'png' | 'jpeg';
+  quality: number;
+  width: number;
+  height: number;
+  includeWatermark: boolean;
+  includeStats: boolean;
+  theme: 'ink' | 'gold' | 'modern';
+}
+
+export interface SocialShareData {
+  platform: 'wechat' | 'weibo' | 'xiaohongshu' | 'twitter' | 'copy';
+  imageUrl?: string;
+  text?: string;
 }
 
 export type AppStore = AppState & AppActions;

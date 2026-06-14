@@ -7,7 +7,9 @@ import type {
   AIImage, AudioTheaterProgress, AdventureProgress, AdventureScene,
   VoiceLearnCard, WrongQuestionGroup, TimeCapsule, StudyBuddy, 
   StudyBuddyMessage, DailyPoemHistory, AnimationScene, HistoricalEvent,
-  UserAchievements, CreationSubmission, RaceGame, RaceQuestion, RacePlayer
+  UserAchievements, CreationSubmission, RaceGame, RaceQuestion, RacePlayer,
+  DynastyMemoryAtlas, MemoryAtlasNode, MemoryAtlasConnection, FocusTimerState,
+  KnowledgeTreeNode, PersonalKnowledgeTree
 } from '@/types';
 import { 
   dynasties, poems, events, getPoemById, getAllDynasties, 
@@ -73,6 +75,181 @@ const initialUserAchievements: UserAchievements = {
   currentBgmId: 'bgm-default',
   titles: [],
   currentTitle: '',
+};
+
+const generateMemoryAtlasForDynasty = (dynastyId: string): DynastyMemoryAtlas => {
+  const dynasty = dynasties.find(d => d.id === dynastyId);
+  if (!dynasty) {
+    return {
+      id: `atlas-${dynastyId}`,
+      dynastyId,
+      isUnlocked: false,
+      nodes: [],
+      connections: [],
+      backgroundStyle: '',
+      aiImagePrompt: '',
+      viewCount: 0,
+    };
+  }
+
+  const dynastyPoems = getPoemsByDynastyId(dynastyId);
+  const dynastyEvents = events.filter(e => e.dynastyId === dynastyId);
+  const nodes: MemoryAtlasNode[] = [];
+  const connections: MemoryAtlasConnection[] = [];
+
+  const centerX = 50;
+  const centerY = 50;
+  const radius = 35;
+
+  nodes.push({
+    id: `node-${dynastyId}-center`,
+    type: 'concept',
+    x: centerX,
+    y: centerY,
+    label: dynasty.name,
+    content: dynasty.description,
+    dynastyId,
+    relatedIds: [],
+  });
+
+  const poemCount = Math.min(dynastyPoems.length, 6);
+  for (let i = 0; i < poemCount; i++) {
+    const poem = dynastyPoems[i];
+    const angle = (i / poemCount) * Math.PI * 2 - Math.PI / 2;
+    const x = centerX + Math.cos(angle) * radius;
+    const y = centerY + Math.sin(angle) * radius * 0.6;
+    
+    const nodeId = `node-poem-${poem.id}`;
+    nodes.push({
+      id: nodeId,
+      type: 'poem',
+      x,
+      y,
+      label: poem.famousLine.slice(0, 15),
+      content: `《${poem.title}》- ${poem.author}\n${poem.famousLine}`,
+      dynastyId,
+      relatedIds: [`node-${dynastyId}-center`],
+      imagePrompt: `${poem.famousLine}的诗意图，${dynasty.name}风格，水墨画`,
+    });
+
+    connections.push({
+      id: `conn-${nodeId}-center`,
+      fromId: nodeId,
+      toId: `node-${dynastyId}-center`,
+      label: '所属朝代',
+      description: `${poem.author}的《${poem.title}》创作于${dynasty.name}时期`,
+    });
+  }
+
+  const eventCount = Math.min(dynastyEvents.length, 4);
+  for (let i = 0; i < eventCount; i++) {
+    const event = dynastyEvents[i];
+    const angle = ((i + 0.5) / eventCount) * Math.PI * 2 - Math.PI / 2;
+    const x = centerX + Math.cos(angle) * radius * 1.4;
+    const y = centerY + Math.sin(angle) * radius * 0.9;
+    
+    const nodeId = `node-event-${event.id}`;
+    nodes.push({
+      id: nodeId,
+      type: 'event',
+      x,
+      y,
+      label: event.name,
+      content: `${event.name} (公元${event.year}年)\n${event.description}`,
+      dynastyId,
+      relatedIds: [`node-${dynastyId}-center`],
+    });
+
+    connections.push({
+      id: `conn-${nodeId}-center`,
+      fromId: nodeId,
+      toId: `node-${dynastyId}-center`,
+      label: '历史事件',
+      description: `${event.name}发生于${dynasty.name}时期，影响了当时的文学创作`,
+    });
+
+    if (dynastyPoems.length > i) {
+      const poemNodeId = `node-poem-${dynastyPoems[i % poemCount].id}`;
+      connections.push({
+        id: `conn-${nodeId}-${poemNodeId}`,
+        fromId: nodeId,
+        toId: poemNodeId,
+        label: '时代影响',
+        description: `此历史事件可能影响了诗人的创作心境和作品风格`,
+        lineStyle: 'dashed',
+      });
+    }
+  }
+
+  const poetCount = Math.min(dynasty.famousPoets.length, 3);
+  for (let i = 0; i < poetCount; i++) {
+    const poet = dynasty.famousPoets[i];
+    const angle = ((i + 0.3) / poetCount) * Math.PI * 2 - Math.PI / 2;
+    const x = centerX + Math.cos(angle) * radius * 0.5;
+    const y = centerY + Math.sin(angle) * radius * 0.3 - radius * 0.8;
+    
+    const nodeId = `node-poet-${dynastyId}-${i}`;
+    nodes.push({
+      id: nodeId,
+      type: 'poet',
+      x,
+      y,
+      label: poet,
+      content: `${poet} - ${dynasty.name}著名诗人`,
+      dynastyId,
+      relatedIds: [`node-${dynastyId}-center`],
+    });
+
+    connections.push({
+      id: `conn-${nodeId}-center`,
+      fromId: nodeId,
+      toId: `node-${dynastyId}-center`,
+      label: '代表诗人',
+      description: `${poet}是${dynasty.name}时期最具代表性的诗人之一`,
+    });
+
+    if (dynastyPoems.length > i) {
+      const poemNodeId = `node-poem-${dynastyPoems[i % poemCount].id}`;
+      connections.push({
+        id: `conn-${nodeId}-poem`,
+        fromId: nodeId,
+        toId: poemNodeId,
+        label: '创作',
+        description: `${poet}创作了这首经典诗词`,
+        lineStyle: 'solid',
+      });
+    }
+  }
+
+  return {
+    id: `atlas-${dynastyId}`,
+    dynastyId,
+    isUnlocked: false,
+    nodes,
+    connections,
+    backgroundStyle: dynasty.color,
+    aiImagePrompt: `${dynasty.name}时期全景知识图谱，包含${dynasty.name}历史文化元素、代表性诗人形象、经典诗词意境、重大历史事件场景，水墨画风格，精美插画`,
+    viewCount: 0,
+  };
+};
+
+const initialFocusTimerState: FocusTimerState = {
+  currentSession: null,
+  timeRemaining: 25 * 60,
+  isRunning: false,
+  totalFocusTime: 0,
+  completedSessions: 0,
+  currentStreak: 0,
+  longestStreak: 0,
+  breakSurprisePoems: [],
+};
+
+const generateInitialMemoryAtlases = (): Record<string, DynastyMemoryAtlas> => {
+  const result: Record<string, DynastyMemoryAtlas> = {};
+  dynasties.forEach(d => {
+    result[d.id] = generateMemoryAtlasForDynasty(d.id);
+  });
+  return result;
 };
 
 const generateTimeCapsuleAnalysis = (
@@ -565,6 +742,10 @@ export const useAppStore = create<AppStore>()(
       creationSubmissions: [],
       currentRaceGame: null,
       raceHistory: [],
+      dynastyMemoryAtlases: generateInitialMemoryAtlases(),
+      focusTimerState: initialFocusTimerState,
+      personalKnowledgeTrees: [],
+      currentKnowledgeTreeId: null,
 
       selectDynasty: (id: string | null) => {
         set({ selectedDynastyId: id });
